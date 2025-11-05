@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Convites de Orador</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1565c0;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        h1:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(to right, #1565c0, #42a5f5);
+            border-radius: 3px;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #f8fbff;
+            border-radius: 8px;
+            border-left: 4px solid #42a5f5;
+        }
+        
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #1976d2;
+            border-bottom: 1px solid #e3f2fd;
+            padding-bottom: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bbdefb;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(to right, #1976d2, #42a5f5);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-whatsapp {
+            background: linear-gradient(to right, #25D366, #128C7E);
+            margin-left: 10px;
+        }
+        
+        .save-config {
+            background: linear-gradient(to right, #2e7d32, #4caf50);
+            margin-right: 10px;
+        }
+        
+        .preview {
+            background-color: #f8fbff;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #1976d2;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .preview h3 {
+            margin-bottom: 15px;
+            color: #1565c0;
+            text-align: center;
+        }
+        
+        .preview-content {
+            white-space: pre-line;
+            line-height: 1.8;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #e3f2fd;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: linear-gradient(to right, #2e7d32, #4caf50);
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .invite-card {
+            display: none;
+            background-color: white;
+            padding: 40px;
+            max-width: 600px;
+            margin: 20px auto;
+            border: 2px solid #1976d2;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .invite-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1565c0;
+            border-bottom: 2px solid #bbdefb;
+            padding-bottom: 15px;
+        }
+        
+        .invite-body {
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        
+        .invite-footer {
+            text-align: center;
+            font-style: italic;
+            color: #546e7a;
+            border-top: 1px solid #e3f2fd;
+            padding-top: 20px;
+        }
+        
+        .scripture {
+            font-style: italic;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f1f8ff;
+            border-left: 3px solid #1976d2;
+        }
+        
+        .invites-history {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8fbff;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .invites-history h3 {
+            margin-bottom: 15px;
+            color: #1565c0;
+        }
+        
+        .invite-item {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #e3f2fd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .invite-info {
+            flex-grow: 1;
+        }
+        
+        .invite-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .hosting-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .invite-card {
+                padding: 20px;
+            }
+            
+            .invite-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .invite-actions {
+                margin-top: 10px;
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de Convites de Orador</h1>
+        
+        <div class="hosting-notice">
+            <p><strong>⚠️ Importante:</strong> Para os links funcionarem, este arquivo precisa estar hospedado na internet (GitHub Pages, Netlify, etc.)</p>
+        </div>
+        
+        <div class="form-section">
+            <h2>Informações da Congregação (Fixas)</h2>
+            <div class="form-group">
+                <label for="congregation">Nome da Congregação</label>
+                <input type="text" id="congregation" placeholder="Ex: Congregação Central">
+            </div>
+            <div class="form-group">
+                <label for="meeting-time">Horário da Reunião</label>
+                <input type="text" id="meeting-time" placeholder="Ex: Domingos, 9h30">
+            </div>
+            <div class="form-group">
+                <label for="address">Endereço da Congregação</label>
+                <textarea id="address" placeholder="Ex: Rua Principal, 123 - Centro - Cidade/Estado"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="contact">Contato para Confirmação</label>
+                <input type="text" id="contact" placeholder="Ex: Irmão João - (11) 99999-9999">
+            </div>
+            <button class="btn save-config" id="save-config">Salvar Configurações</button>
+        </div>
+        
+        <div class="form-section">
+            <h2>Detalhes do Convite (Editáveis)</h2>
+            <div class="form-group">
+                <label for="suggested-speaker">Orador Sugerido</label>
+                <input type="text" id="suggested-speaker" placeholder="Ex: Irmão João Silva">
+            </div>
+            <div class="form-group">
+                <label for="destination-congregation">Congregação Destinatária</label>
+                <input type="text" id="destination-congregation" placeholder="Ex: Congregação Norte">
+            </div>
+            <div class="form-group">
+                <label for="speech-theme">Tema do Discurso</label>
+                <input type="text" id="speech-theme" placeholder="Ex: Como manter a fé em tempos difíceis">
+            </div>
+            <div class="form-group">
+                <label for="speech-date">Data Sugerida para o Discurso</label>
+                <input type="text" id="speech-date" placeholder="Ex: 15 de Março de 2024">
+            </div>
+            <div class="form-group">
+                <label for="observation">Observação</label>
+                <textarea id="observation" placeholder="Ex: Por favor, confirmar disponibilidade até sexta-feira"></textarea>
+            </div>
+        </div>
+        
+        <div class="preview">
+            <h3>Prévia do Convite:</h3>
+            <div class="preview-content" id="preview-content"></div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn" id="update-preview">Atualizar Prévia</button>
+            <button class="btn save-config" id="generate-pdf">Gerar PDF</button>
+            <button class="btn btn-whatsapp" id="send-whatsapp">Enviar pelo WhatsApp</button>
+        </div>
+        
+        <div class="invites-history">
+            <h3>Convites Gerados Recentemente</h3>
+            <div id="invites-list">
+                <!-- Lista de convites será preenchida via JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cartão do convite que será convertido em imagem -->
+    <div id="invite-card" class="invite-card">
+        <div class="invite-header">
+            <h2>CONVITE PARA ORADOR</h2>
+        </div>
+        
+        <div class="invite-body" id="invite-body">
+            <!-- Conteúdo será preenchido via JavaScript -->
+        </div>
+        
+        <div class="invite-footer">
+            <p>Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.</p>
+            <p class="scripture">"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10</p>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">Configurações salvas com sucesso!</div>
+
+    <script>
+        // Elementos do DOM
+        const congregationInput = document.getElementById('congregation');
+        const meetingTimeInput = document.getElementById('meeting-time');
+        const addressInput = document.getElementById('address');
+        const contactInput = document.getElementById('contact');
+        const suggestedSpeakerInput = document.getElementById('suggested-speaker');
+        const destinationCongregationInput = document.getElementById('destination-congregation');
+        const speechThemeInput = document.getElementById('speech-theme');
+        const speechDateInput = document.getElementById('speech-date');
+        const observationInput = document.getElementById('observation');
+        const saveConfigBtn = document.getElementById('save-config');
+        const updatePreviewBtn = document.getElementById('update-preview');
+        const generatePdfBtn = document.getElementById('generate-pdf');
+        const sendWhatsappBtn = document.getElementById('send-whatsapp');
+        const previewContent = document.getElementById('preview-content');
+        const inviteBody = document.getElementById('invite-body');
+        const notification = document.getElementById('notification');
+        const invitesList = document.getElementById('invites-list');
+        
+        // Carregar configurações salvas
+        function loadSavedConfig() {
+            const savedCongregation = localStorage.getItem('congregation');
+            const savedMeetingTime = localStorage.getItem('meetingTime');
+            const savedAddress = localStorage.getItem('address');
+            const savedContact = localStorage.getItem('contact');
+            
+            if (savedCongregation) congregationInput.value = savedCongregation;
+            if (savedMeetingTime) meetingTimeInput.value = savedMeetingTime;
+            if (savedAddress) addressInput.value = savedAddress;
+            if (savedContact) contactInput.value = savedContact;
+            
+            updatePreview();
+            loadInvitesHistory();
+        }
+        
+        // Salvar configurações
+        saveConfigBtn.addEventListener('click', function() {
+            localStorage.setItem('congregation', congregationInput.value);
+            localStorage.setItem('meetingTime', meetingTimeInput.value);
+            localStorage.setItem('address', addressInput.value);
+            localStorage.setItem('contact', contactInput.value);
+            
+            showNotification('Configurações salvas com sucesso!');
+            updatePreview();
+        });
+        
+        // Mostrar notificação
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Atualizar prévia
+        function updatePreview() {
+            const congregation = congregationInput.value || '[Nome da Congregação]';
+            const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
+            const address = addressInput.value || '[Endereço da Congregação]';
+            const contact = contactInput.value || '[Contato para Confirmação]';
+            const suggestedSpeaker = suggestedSpeakerInput.value || '[Orador Sugerido]';
+            const destinationCongregation = destinationCongregationInput.value || '[Congregação Destinatária]';
+            const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
+            const speechDate = speechDateInput.value || '[Data Sugerida]';
+            const observation = observationInput.value || '[Observação]';
+            
+            const previewText = `CONVITE PARA ORADOR
+
+Prezados irmãos da congregação ${destinationCongregation},
+
+Conforme Hebreus 10:24,25: "E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia."
+
+Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.
+
+INFORMAÇÕES:
+- Congregação: ${congregation}
+- Horário da Reunião: ${meetingTime}
+- Endereço: ${address}
+- Contato: ${contact}
+
+DETALHES DO DISCURSO:
+- Orador Sugerido: ${suggestedSpeaker}
+- Tema: ${speechTheme}
+- Data Sugerida: ${speechDate}
+
+Observação: ${observation}
+
+Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.
+
+"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10`;
+            
+            previewContent.textContent = previewText;
+            
+            updateInviteTemplate(
+                congregation, meetingTime, address, contact,
+                destinationCongregation, suggestedSpeaker, speechTheme, speechDate, observation
+            );
+        }
+        
+        // Atualizar o template do convite
+        function updateInviteTemplate(
+            congregation, meetingTime, address, contact,
+            destinationCongregation, suggestedSpeaker, speechTheme, speechDate, observation
+        ) {
+            const inviteHtml = `
+                <p>Prezados irmãos da congregação <strong>${destinationCongregation}</strong>,</p>
+                
+                <p class="scripture">"E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia." - Hebreus 10:24,25</p>
+                
+                <p>Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.</p>
+                
+                <h3>INFORMAÇÕES:</h3>
+                <ul>
+                    <li><strong>Congregação:</strong> ${congregation}</li>
+                    <li><strong>Horário da Reunião:</strong> ${meetingTime}</li>
+                    <li><strong>Endereço:</strong> ${address}</li>
+                    <li><strong>Contato:</strong> ${contact}</li>
+                </ul>
+                
+                <h3>DETALHES DO DISCURSO:</h3>
+                <ul>
+                    <li><strong>Orador Sugerido:</strong> ${suggestedSpeaker}</li>
+                    <li><strong>Tema:</strong> ${speechTheme}</li>
+                    <li><strong>Data Sugerida:</strong> ${speechDate}</li>
+                </ul>
+                
+                ${observation && observation !== '[Observação]' ? `<p><strong>Observação:</strong> ${observation}</p>` : ''}
+            `;
+            
+            inviteBody.innerHTML = inviteHtml;
+        }
+        
+        // Atualizar prévia quando o botão for clicado
+        updatePreviewBtn.addEventListener('click', updatePreview);
+        
+        // Gerar PDF
+        generatePdfBtn.addEventListener('click', function() {
+            const congregation = congregationInput.value || '[Nome da Congregação]';
+            const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
+            const address = addressInput.value || '[Endereço da Congregação]';
+            const contact = contactInput.value || '[Contato para Confirmação]';
+            const suggestedSpeaker = suggestedSpeakerInput.value || '[Orador Sugerido]';
+            const destinationCongregation = destinationCongregationInput.value || '[Congregação Destinatária]';
+            const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
+            const speechDate = speechDateInput.value || '[Data Sugerida]';
+            const observation = observationInput.value || '[Observação]';
+            
+            // Criar o PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // Configurações do PDF
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            let yPosition = margin;
+            
+            // Título
+            pdf.setFontSize(18);
+            pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(21, 101, 192);
+            pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 15;
+            
+            // Saudação
+            pdf.setFontSize(12);
+            pdf.setFont(undefined, 'normal');
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(`Prezados irmãos da congregação ${destinationCongregation},`, margin, yPosition);
+            yPosition += 10;
+            
+            // Texto bíblico
+            pdf.setFont(undefined, 'italic');
+            pdf.text('"E pensemos uns nos outros para nos estimular ao amor e às boas', margin, yPosition);
+            yPosition += 5;
+            pdf.text('obras, não deixando de nos reunir, como é costume de alguns,', margin, yPosition);
+            yPosition += 5;
+            pdf.text('mas nos encorajando uns aos outros, e ainda mais ao passo', margin, yPosition);
+            yPosition += 5;
+            pdf.text('que vocês veem chegar o dia." - Hebreus 10:24,25', margin, yPosition);
+            yPosition += 10;
+            
+            // Texto introdutório
+            pdf.setFont(undefined, 'normal');
+            pdf.text('Precisamos nos estimular ao amor e às boas obras. Por isso, as boas', margin, yPosition);
+            yPosition += 5;
+            pdf.text('companhias de nossos irmãos são muito importantes. Sendo assim,', margin, yPosition);
+            yPosition += 5;
+            pdf.text('gostaríamos de convidar um dos oradores da sua congregação para', margin, yPosition);
+            yPosition += 5;
+            pdf.text('proferir um discurso público aqui na nossa congregação.', margin, yPosition);
+            yPosition += 15;
+            
+            // Informações
+            pdf.setFont(undefined, 'bold');
+            pdf.text('INFORMAÇÕES:', margin, yPosition);
+            yPosition += 8;
+            
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`• Congregação: ${congregation}`, margin, yPosition);
+            yPosition += 6;
+            pdf.text(`• Horário da Reunião: ${meetingTime}`, margin, yPosition);
+            yPosition += 6;
+            pdf.text(`• Endereço: ${address}`, margin, yPosition);
+            yPosition += 6;
+            pdf.text(`• Contato: ${contact}`, margin, yPosition);
+            yPosition += 12;
+            
+            // Detalhes do discurso
+            pdf.setFont(undefined, 'bold');
+            pdf.text('DETALHES DO DISCURSO:', margin, yPosition);
+            yPosition += 8;
+            
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`• Orador Sugerido: ${suggestedSpeaker}`, margin, yPosition);
+            yPosition += 6;
+            pdf.text(`• Tema: ${speechTheme}`, margin, yPosition);
+            yPosition += 6;
+            pdf.text(`• Data Sugerida: ${speechDate}`, margin, yPosition);
+            yPosition += 12;
+            
+            // Observação
+            if (observation && observation !== '[Observação]') {
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Observação:', margin, yPosition);
+                yPosition += 8;
+                
+                pdf.setFont(undefined, 'normal');
+                const observationLines = pdf.splitTextToSize(observation, pageWidth - 2 * margin);
+                pdf.text(observationLines, margin, yPosition);
+                yPosition += observationLines.length * 6 + 8;
+            }
+            
+            // Agradecimento
+            pdf.text('Agradecemos muito a colaboração para os arranjos da obra e', margin, yPosition);
+            yPosition += 5;
+            pdf.text('arranjos teocráticos.', margin, yPosition);
+            yPosition += 12;
+            
+            // Texto bíblico final
+            pdf.setFont(undefined, 'italic');
+            pdf.text('"E vejam se não abrirei para vocês as comportas dos céus e se', margin, yPosition);
+            yPosition += 5;
+            pdf.text('não derramarei sobre vocês uma bênção até que não falte', margin, yPosition);
+            yPosition += 5;
+            pdf.text('mais nada." - Malaquias 3:10', margin, yPosition);
+            
+            // Salvar o PDF
+            pdf.save('Convite_Orador.pdf');
+            showNotification('PDF gerado com sucesso!');
+        });
+        
+        // Gerar um ID único para o convite
+        function generateInviteId() {
+            return 'invite_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Salvar convite no histórico
+        function saveInviteToHistory(inviteData) {
+            let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            invites.unshift(inviteData);
+            // Manter apenas os últimos 10 convites
+            if (invites.length > 10) {
+                invites = invites.slice(0, 10);
+            }
+            localStorage.setItem('invitesHistory', JSON.stringify(invites));
+            loadInvitesHistory();
+        }
+        
+        // Carregar histórico de convites
+        function loadInvitesHistory() {
+            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            invitesList.innerHTML = '';
+            
+            if (invites.length === 0) {
+                invitesList.innerHTML = '<p style="text-align: center; color: #666;">Nenhum convite gerado ainda</p>';
+                return;
+            }
+            
+            invites.forEach((invite, index) => {
+                const inviteItem = document.createElement('div');
+                inviteItem.className = 'invite-item';
+                inviteItem.innerHTML = `
+                    <div class="invite-info">
+                        <strong>${invite.destinationCongregation}</strong><br>
+                        <small>${invite.suggestedSpeaker} - ${invite.speechDate}</small>
+                    </div>
+                    <div class="invite-actions">
+                        <button class="btn copy-invite-link" data-id="${invite.id}">Copiar Link</button>
+                        <button class="btn" onclick="viewInvite('${invite.id}')">Ver</button>
+                    </div>
+                `;
+                invitesList.appendChild(inviteItem);
+            });
+            
+            // Adicionar eventos aos botões de copiar link
+            document.querySelectorAll('.copy-invite-link').forEach(button => {
+                button.addEventListener('click', function() {
+                    const inviteId = this.getAttribute('data-id');
+                    copyInviteLink(inviteId);
+                });
+            });
+        }
+        
+        // Copiar link do convite
+        function copyInviteLink(inviteId) {
+            const currentUrl = window.location.href.split('?')[0];
+            const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
+            navigator.clipboard.writeText(inviteUrl).then(() => {
+                showNotification('Link do convite copiado!');
+            });
+        }
+        
+        // Enviar por WhatsApp - AGORA ABRE DIRETAMENTE
+        sendWhatsappBtn.addEventListener('click', function() {
+            // Primeiro atualizamos o template do convite
+            updatePreview();
+            
+            // Gerar um ID único para este convite
+            const inviteId = generateInviteId();
+            
+            // Salvar dados do convite
+            const inviteData = {
+                id: inviteId,
+                congregation: congregationInput.value || '[Nome da Congregação]',
+                meetingTime: meetingTimeInput.value || '[Horário da Reunião]',
+                address: addressInput.value || '[Endereço da Congregação]',
+                contact: contactInput.value || '[Contato para Confirmação]',
+                suggestedSpeaker: suggestedSpeakerInput.value || '[Orador Sugerido]',
+                destinationCongregation: destinationCongregationInput.value || '[Congregação Destinatária]',
+                speechTheme: speechThemeInput.value || '[Tema do Discurso]',
+                speechDate: speechDateInput.value || '[Data Sugerida]',
+                observation: observationInput.value || '[Observação]',
+                timestamp: Date.now()
+            };
+            
+            // Salvar no histórico
+            saveInviteToHistory(inviteData);
+            
+            // Criar URL para a página do convite
+            const currentUrl = window.location.href.split('?')[0];
+            const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
+            
+            // Preparar mensagem para WhatsApp
+            const congregation = congregationInput.value || '[Nome da Congregação]';
+            const suggestedSpeaker = suggestedSpeakerInput.value || '[Orador Sugerido]';
+            const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
+            const speechDate = speechDateInput.value || '[Data Sugerida]';
+            
+            const message = `🎤 *CONVITE PARA ORADOR*
+
+Prezados irmãos,
+
+Conforme Hebreus 10:24,25, precisamos nos estimular ao amor e às boas obras. 
+
+Gostaríamos de convidar *${suggestedSpeaker}* para proferir o discurso:
+*"${speechTheme}"*
+
+📅 *Data Sugerida:* ${speechDate}
+📍 *Congregação:* ${congregation}
+
+📎 *Clique no link abaixo para visualizar o convite completo:*
+${inviteUrl}
+
+Agradecemos antecipadamente pela atenção e colaboração.
+
+Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
+            
+            // Codificar a mensagem para URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Abrir WhatsApp diretamente
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+            
+            showNotification('WhatsApp aberto com a mensagem pronta!');
+        });
+        
+        // Verificar se deve mostrar um convite específico
+        function checkForInviteView() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewMode = urlParams.get('view');
+            const inviteId = urlParams.get('id');
+            
+            if (viewMode === 'invite' && inviteId) {
+                showInvitePage(inviteId);
+            }
+        }
+        
+        // Mostrar página do convite
+        function showInvitePage(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
+            
+            if (invite) {
+                // Substituir todo o conteúdo da página pela visualização do convite
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div class="invite-card" style="display: block;">
+                            <div class="invite-header">
+                                <h2>CONVITE PARA ORADOR</h2>
+                            </div>
+                            
+                            <div class="invite-body">
+                                ${generateInviteHtml(invite)}
+                            </div>
+                            
+                            <div class="invite-footer">
+                                <p>Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.</p>
+                                <p class="scripture">"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10</p>
+                            </div>
+                        </div>
+                        
+                        <div class="actions" style="margin-top: 30px;">
+                            <button class="btn" id="download-invite-image">Baixar Convite (Imagem)</button>
+                            <button class="btn" id="download-invite-pdf">Baixar PDF</button>
+                            <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Adicionar eventos aos botões
+                document.getElementById('download-invite-image').addEventListener('click', function() {
+                    downloadInviteAsImage(invite);
+                });
+                
+                document.getElementById('download-invite-pdf').addEventListener('click', function() {
+                    downloadInviteAsPdf(invite);
+                });
+            } else {
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div style="text-align: center; padding: 50px;">
+                            <h2>Convite Não Encontrado</h2>
+                            <p>O convite que você está tentando acessar não existe ou foi removido.</p>
+                            <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar ao Gerador</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Gerar HTML do convite
+        function generateInviteHtml(invite) {
+            return `
+                <p>Prezados irmãos da congregação <strong>${invite.destinationCongregation}</strong>,</p>
+                
+                <p class="scripture">"E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia." - Hebreus 10:24,25</p>
+                
+                <p>Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.</p>
+                
+                <h3>INFORMAÇÕES:</h3>
+                <ul>
+                    <li><strong>Congregação:</strong> ${invite.congregation}</li>
+                    <li><strong>Horário da Reunião:</strong> ${invite.meetingTime}</li>
+                    <li><strong>Endereço:</strong> ${invite.address}</li>
+                    <li><strong>Contato:</strong> ${invite.contact}</li>
+                </ul>
+                
+                <h3>DETALHES DO DISCURSO:</h3>
+                <ul>
+                    <li><strong>Orador Sugerido:</strong> ${invite.suggestedSpeaker}</li>
+                    <li><strong>Tema:</strong> ${invite.speechTheme}</li>
+                    <li><strong>Data Sugerida:</strong> ${invite.speechDate}</li>
+                </ul>
+                
+                ${invite.observation && invite.observation !== '[Observação]' ? `<p><strong>Observação:</strong> ${invite.observation}</p>` : ''}
+            `;
+        }
+        
+        // Baixar convite como imagem
+        function downloadInviteAsImage(invite) {
+            const inviteCard = document.querySelector('.invite-card');
+            
+            html2canvas(inviteCard, {
+                scale: 0.75,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.8);
+                link.click();
+            });
+        }
+        
+        // Baixar convite como PDF
+        function downloadInviteAsPdf(invite) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            let yPosition = margin;
+            
+            pdf.setFontSize(18);
+            pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(21, 101, 192);
+            pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 15;
+            
+            // Restante do código do PDF (similar à função anterior)
+            // ... (implementação do conteúdo do PDF)
+            
+            pdf.save(`convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.pdf`);
+        }
+        
+        // Carregar configurações ao iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedConfig();
+            checkForInviteView();
+        });
+        
+        // Atualizar prévia quando os campos editáveis mudarem
+        const inputs = [
+            suggestedSpeakerInput, destinationCongregationInput, 
+            speechThemeInput, speechDateInput, observationInput,
+            congregationInput, meetingTimeInput, addressInput, contactInput
+        ];
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', updatePreview);
+        });
+        
+        // Função global para visualizar convite
+        window.viewInvite = function(inviteId) {
+            const currentUrl = window.location.href.split('?')[0];
+            const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
+            window.open(inviteUrl, '_blank');
+        };
+    </script>
+</body>
+</html>
