@@ -6,6 +6,7 @@
     <title>Gerador de Convites de Orador</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -78,7 +79,7 @@
             color: #0d47a1;
         }
         
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 10px;
             border: 1px solid #bbdefb;
@@ -87,7 +88,7 @@
             transition: border 0.3s;
         }
         
-        input:focus, textarea:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #1976d2;
             box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
@@ -119,6 +120,11 @@
         
         .btn-whatsapp {
             background: linear-gradient(to right, #25D366, #128C7E);
+            margin-left: 10px;
+        }
+        
+        .btn-excel {
+            background: linear-gradient(to right, #217346, #21a366);
             margin-left: 10px;
         }
         
@@ -262,15 +268,6 @@
             font-weight: bold;
         }
         
-        .status-pending {
-            background-color: #ff9800;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
         .table-actions {
             display: flex;
             gap: 5px;
@@ -321,6 +318,21 @@
             margin: 20px 0;
         }
         
+        .backup-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .backup-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -351,6 +363,10 @@
             .table-btn {
                 margin-bottom: 5px;
             }
+            
+            .backup-options {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -360,6 +376,16 @@
         
         <div class="hosting-notice">
             <p><strong>⚠️ Importante:</strong> Para os links funcionarem, este arquivo precisa estar hospedado na internet (GitHub Pages, Netlify, etc.)</p>
+        </div>
+        
+        <div class="backup-section">
+            <h3>📊 Backup e Exportação</h3>
+            <p>Exporte seus dados para não perder as informações:</p>
+            <div class="backup-options">
+                <button class="btn btn-excel" id="export-excel">Exportar para Excel</button>
+                <button class="btn" id="backup-data">Fazer Backup</button>
+                <button class="btn" id="restore-data">Restaurar Backup</button>
+            </div>
         </div>
         
         <div class="form-section">
@@ -472,6 +498,9 @@
         const updatePreviewBtn = document.getElementById('update-preview');
         const generatePdfBtn = document.getElementById('generate-pdf');
         const sendWhatsappBtn = document.getElementById('send-whatsapp');
+        const exportExcelBtn = document.getElementById('export-excel');
+        const backupDataBtn = document.getElementById('backup-data');
+        const restoreDataBtn = document.getElementById('restore-data');
         const previewContent = document.getElementById('preview-content');
         const inviteBody = document.getElementById('invite-body');
         const notification = document.getElementById('notification');
@@ -887,6 +916,183 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             }
         }
         
+        // Exportar para Excel - COM FORMATAÇÃO MELHOR
+        exportExcelBtn.addEventListener('click', function() {
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            
+            if (invites.length === 0) {
+                showNotification('Nenhum dado para exportar');
+                return;
+            }
+            
+            // Preparar dados para Excel
+            const excelData = invites.map(invite => ({
+                'Data do Discurso': invite.speechDate,
+                'Congregação Destinatária': invite.destinationCongregation,
+                'Orador Sugerido': invite.suggestedSpeaker,
+                'Tema do Discurso': invite.speechTheme,
+                'Data de Envio': new Date(invite.sendTimestamp).toLocaleDateString('pt-BR'),
+                'Observação': invite.observation || '',
+                'Congregação Remetente': invite.congregation,
+                'Contato': invite.contact
+            }));
+            
+            // Criar planilha
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            
+            // Aplicar formatação à planilha
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Convites de Orador");
+            
+            // Definir larguras das colunas
+            const colWidths = [
+                { wch: 15 }, // Data do Discurso
+                { wch: 25 }, // Congregação Destinatária
+                { wch: 25 }, // Orador Sugerido
+                { wch: 30 }, // Tema do Discurso
+                { wch: 15 }, // Data de Envio
+                { wch: 30 }, // Observação
+                { wch: 25 }, // Congregação Remetente
+                { wch: 20 }  // Contato
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Definir estilo para o cabeçalho
+            if (!ws['!merges']) ws['!merges'] = [];
+            
+            // Adicionar título
+            const titleRange = { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } };
+            XLSX.utils.sheet_add_aoa(ws, [["CONTROLE DE CONVITES PARA ORADORES"]], { origin: -1 });
+            ws['!merges'].push(titleRange);
+            
+            // Adicionar dados abaixo do título
+            XLSX.utils.sheet_add_json(ws, excelData, { origin: 'A2', skipHeader: false });
+            
+            // Aplicar estilos às células
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            // Estilo para o título
+            if (ws['A1']) {
+                ws['A1'].s = {
+                    font: { sz: 16, bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "1976D2" } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+            
+            // Estilo para o cabeçalho
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 1, c: C });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        font: { sz: 12, bold: true, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "42A5F5" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        border: {
+                            top: { style: "thin", color: { rgb: "1565C0" } },
+                            left: { style: "thin", color: { rgb: "1565C0" } },
+                            bottom: { style: "thin", color: { rgb: "1565C0" } },
+                            right: { style: "thin", color: { rgb: "1565C0" } }
+                        }
+                    };
+                }
+            }
+            
+            // Estilo para as células de dados
+            for (let R = 2; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (ws[cellAddress]) {
+                        // Alternar cores de fundo para melhor legibilidade
+                        const bgColor = R % 2 === 0 ? "E3F2FD" : "F8FBFF";
+                        
+                        ws[cellAddress].s = {
+                            font: { sz: 10 },
+                            fill: { fgColor: { rgb: bgColor } },
+                            border: {
+                                top: { style: "thin", color: { rgb: "BBDEFB" } },
+                                left: { style: "thin", color: { rgb: "BBDEFB" } },
+                                bottom: { style: "thin", color: { rgb: "BBDEFB" } },
+                                right: { style: "thin", color: { rgb: "BBDEFB" } }
+                            }
+                        };
+                    }
+                }
+            }
+            
+            // Exportar
+            XLSX.writeFile(wb, "controle_convites_oradores.xlsx");
+            showNotification('Planilha exportada com sucesso!');
+        });
+        
+        // Fazer backup dos dados
+        backupDataBtn.addEventListener('click', function() {
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            const config = {
+                congregation: localStorage.getItem('congregation'),
+                meetingTime: localStorage.getItem('meetingTime'),
+                address: localStorage.getItem('address'),
+                contact: localStorage.getItem('contact')
+            };
+            
+            const backupData = {
+                invites: invites,
+                config: config,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Criar arquivo de backup
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `backup_convites_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Backup criado com sucesso!');
+        });
+        
+        // Restaurar backup
+        restoreDataBtn.addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const backupData = JSON.parse(event.target.result);
+                        
+                        // Restaurar convites
+                        if (backupData.invites) {
+                            localStorage.setItem('invitesControl', JSON.stringify(backupData.invites));
+                        }
+                        
+                        // Restaurar configurações
+                        if (backupData.config) {
+                            if (backupData.config.congregation) localStorage.setItem('congregation', backupData.config.congregation);
+                            if (backupData.config.meetingTime) localStorage.setItem('meetingTime', backupData.config.meetingTime);
+                            if (backupData.config.address) localStorage.setItem('address', backupData.config.address);
+                            if (backupData.config.contact) localStorage.setItem('contact', backupData.config.contact);
+                        }
+                        
+                        loadSavedConfig();
+                        showNotification('Backup restaurado com sucesso!');
+                    } catch (error) {
+                        showNotification('Erro ao restaurar backup: arquivo inválido');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        });
+        
         // Enviar por WhatsApp
         sendWhatsappBtn.addEventListener('click', async function() {
             // Primeiro atualizamos o template do convite
@@ -967,91 +1173,37 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             }
         }
         
-        // Mostrar página do convite (AGORA MOSTRA A IMAGEM SALVA)
+        // Mostrar página do convite (PÁGINA SEPARADA - SÓ MOSTRA IMAGEM)
         function showInvitePage(inviteId) {
-            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
-            const invite = invites.find(inv => inv.id === inviteId);
+            // Buscar a imagem salva no localStorage
+            const savedImage = localStorage.getItem(`invite_image_${inviteId}`);
             
-            if (invite) {
-                // Buscar a imagem salva no localStorage
-                const savedImage = localStorage.getItem(`invite_image_${inviteId}`);
-                
-                if (savedImage) {
-                    // Mostrar a imagem salva
-                    document.body.innerHTML = `
-                        <div class="container">
-                            <div style="text-align: center;">
-                                <h2>Convite para Orador</h2>
-                                <p><strong>Congregação ${invite.destinationCongregation}</strong> - ${invite.speechDate}</p>
-                                <img src="${savedImage}" alt="Convite para Orador" class="invite-image">
-                            </div>
-                            
-                            <div class="actions" style="margin-top: 30px;">
-                                <button class="btn" onclick="downloadInviteImage('${inviteId}')">Baixar Imagem</button>
-                                <button class="btn" onclick="downloadInviteAsPdfFromView('${inviteId}')">Baixar PDF</button>
-                                <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar</button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    // Se não encontrou a imagem, mostra mensagem de erro
-                    document.body.innerHTML = `
-                        <div class="container">
-                            <div style="text-align: center; padding: 50px;">
-                                <h2>Convite Não Encontrado</h2>
-                                <p>A imagem deste convite não está mais disponível.</p>
-                                <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar ao Gerador</button>
-                            </div>
-                        </div>
-                    `;
-                }
-            } else {
+            if (savedImage) {
+                // Página mínima só com a imagem - sem acesso ao admin
                 document.body.innerHTML = `
-                    <div class="container">
-                        <div style="text-align: center; padding: 50px;">
-                            <h2>Convite Não Encontrado</h2>
-                            <p>O convite que você está tentando acessar não existe ou foi removido.</p>
-                            <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar ao Gerador</button>
+                    <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #f5f5f5;">
+                        <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 100%;">
+                            <img src="${savedImage}" alt="Convite para Orador" style="max-width: 100%; height: auto; border-radius: 5px;">
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="downloadImage('${savedImage}')" style="padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                📥 Baixar Imagem
+                            </button>
+                            <button onclick="window.print()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                🖨️ Imprimir
+                            </button>
                         </div>
                     </div>
                 `;
-            }
-        }
-        
-        // Baixar imagem do convite (na página de visualização)
-        function downloadInviteImage(inviteId) {
-            const savedImage = localStorage.getItem(`invite_image_${inviteId}`);
-            if (savedImage) {
-                const link = document.createElement('a');
-                link.download = `convite_${inviteId}.jpg`;
-                link.href = savedImage;
-                link.click();
-            }
-        }
-        
-        // Baixar PDF do convite (na página de visualização)
-        function downloadInviteAsPdfFromView(inviteId) {
-            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
-            const invite = invites.find(inv => inv.id === inviteId);
-            
-            if (invite) {
-                // Implementação similar à função generatePDF mas usando os dados do invite
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const margin = 20;
-                let yPosition = margin;
-                
-                pdf.setFontSize(18);
-                pdf.setFont(undefined, 'bold');
-                pdf.setTextColor(21, 101, 192);
-                pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
-                yPosition += 15;
-                
-                // ... (restante do código do PDF)
-                
-                pdf.save(`convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.pdf`);
+            } else {
+                document.body.innerHTML = `
+                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                        <div style="text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h2 style="color: #666; margin-bottom: 20px;">Convite Não Encontrado</h2>
+                            <p style="color: #888; margin-bottom: 20px;">Este convite não está mais disponível.</p>
+                        </div>
+                    </div>
+                `;
             }
         }
         
@@ -1082,11 +1234,13 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
         // Função global para reenviar convite
         window.resendInvite = resendInvite;
         
-        // Função global para baixar imagem
-        window.downloadInviteImage = downloadInviteImage;
-        
-        // Função global para baixar PDF
-        window.downloadInviteAsPdfFromView = downloadInviteAsPdfFromView;
+        // Função global para baixar imagem (na página de visualização)
+        window.downloadImage = function(imageData) {
+            const link = document.createElement('a');
+            link.download = 'convite_orador.jpg';
+            link.href = imageData;
+            link.click();
+        };
     </script>
 </body>
 </html>
