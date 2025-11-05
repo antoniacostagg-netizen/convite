@@ -23,7 +23,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -213,7 +213,7 @@
             border-left: 3px solid #1976d2;
         }
         
-        .invites-history {
+        .invites-control {
             margin-top: 30px;
             padding: 20px;
             background-color: #f8fbff;
@@ -221,29 +221,88 @@
             border-left: 4px solid #ff9800;
         }
         
-        .invites-history h3 {
+        .invites-control h3 {
             margin-bottom: 15px;
             color: #1565c0;
         }
         
-        .invite-item {
+        .control-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
             background-color: white;
-            padding: 15px;
-            margin-bottom: 10px;
             border-radius: 5px;
-            border: 1px solid #e3f2fd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
-        .invite-info {
-            flex-grow: 1;
+        .control-table th,
+        .control-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e3f2fd;
         }
         
-        .invite-actions {
+        .control-table th {
+            background-color: #1976d2;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .control-table tr:hover {
+            background-color: #f8fbff;
+        }
+        
+        .status-sent {
+            background-color: #4caf50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background-color: #ff9800;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .table-actions {
             display: flex;
-            gap: 10px;
+            gap: 5px;
+        }
+        
+        .table-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .btn-copy {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .btn-view {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .btn-resend {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .empty-table {
+            text-align: center;
+            padding: 30px;
+            color: #666;
         }
         
         .hosting-notice {
@@ -255,7 +314,14 @@
             text-align: center;
         }
         
-        @media (max-width: 600px) {
+        .invite-image {
+            max-width: 100%;
+            border: 2px solid #1976d2;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
             .container {
                 padding: 15px;
             }
@@ -273,15 +339,17 @@
                 padding: 20px;
             }
             
-            .invite-item {
-                flex-direction: column;
-                align-items: flex-start;
+            .control-table {
+                display: block;
+                overflow-x: auto;
             }
             
-            .invite-actions {
-                margin-top: 10px;
-                width: 100%;
-                justify-content: space-between;
+            .table-actions {
+                flex-direction: column;
+            }
+            
+            .table-btn {
+                margin-bottom: 5px;
             }
         }
     </style>
@@ -350,11 +418,24 @@
             <button class="btn btn-whatsapp" id="send-whatsapp">Enviar pelo WhatsApp</button>
         </div>
         
-        <div class="invites-history">
-            <h3>Convites Gerados Recentemente</h3>
-            <div id="invites-list">
-                <!-- Lista de convites será preenchida via JavaScript -->
-            </div>
+        <div class="invites-control">
+            <h3>Controle de Convites Enviados</h3>
+            <table class="control-table">
+                <thead>
+                    <tr>
+                        <th>Data do Discurso</th>
+                        <th>Congregação</th>
+                        <th>Orador</th>
+                        <th>Tema</th>
+                        <th>Data de Envio</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="control-table-body">
+                    <!-- Tabela será preenchida via JavaScript -->
+                </tbody>
+            </table>
         </div>
     </div>
     
@@ -394,7 +475,7 @@
         const previewContent = document.getElementById('preview-content');
         const inviteBody = document.getElementById('invite-body');
         const notification = document.getElementById('notification');
-        const invitesList = document.getElementById('invites-list');
+        const controlTableBody = document.getElementById('control-table-body');
         
         // Carregar configurações salvas
         function loadSavedConfig() {
@@ -409,7 +490,7 @@
             if (savedContact) contactInput.value = savedContact;
             
             updatePreview();
-            loadInvitesHistory();
+            loadControlTable();
         }
         
         // Salvar configurações
@@ -634,50 +715,132 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             return 'invite_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         
-        // Salvar convite no histórico
-        function saveInviteToHistory(inviteData) {
-            let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-            invites.unshift(inviteData);
-            // Manter apenas os últimos 10 convites
-            if (invites.length > 10) {
-                invites = invites.slice(0, 10);
+        // Converter data para formato ordenável
+        function parseDate(dateString) {
+            const months = {
+                'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
+                'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
+                'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
+            };
+            
+            const parts = dateString.toLowerCase().split(' de ');
+            if (parts.length === 3) {
+                const day = parts[0].padStart(2, '0');
+                const month = months[parts[1]] || '01';
+                const year = parts[2];
+                return `${year}-${month}-${day}`;
             }
-            localStorage.setItem('invitesHistory', JSON.stringify(invites));
-            loadInvitesHistory();
+            return '9999-12-31'; // Data inválida vai para o final
         }
         
-        // Carregar histórico de convites
-        function loadInvitesHistory() {
-            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-            invitesList.innerHTML = '';
+        // Gerar imagem do convite e salvar
+        function generateAndSaveInviteImage(inviteData) {
+            return new Promise((resolve, reject) => {
+                // Atualizar o template com os dados do convite
+                updateInviteTemplate(
+                    inviteData.congregation,
+                    inviteData.meetingTime,
+                    inviteData.address,
+                    inviteData.contact,
+                    inviteData.destinationCongregation,
+                    inviteData.suggestedSpeaker,
+                    inviteData.speechTheme,
+                    inviteData.speechDate,
+                    inviteData.observation
+                );
+                
+                // Mostrar o cartão temporariamente
+                const inviteCard = document.getElementById('invite-card');
+                inviteCard.style.display = 'block';
+                
+                // Gerar a imagem
+                html2canvas(inviteCard, {
+                    scale: 0.75,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    // Ocultar o cartão novamente
+                    inviteCard.style.display = 'none';
+                    
+                    // Converter canvas para imagem
+                    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Salvar a imagem no localStorage
+                    localStorage.setItem(`invite_image_${inviteData.id}`, imgData);
+                    
+                    resolve(imgData);
+                }).catch(error => {
+                    inviteCard.style.display = 'none';
+                    reject(error);
+                });
+            });
+        }
+        
+        // Salvar convite no controle
+        async function saveInviteToControl(inviteData) {
+            let invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            
+            // Gerar e salvar a imagem do convite
+            try {
+                await generateAndSaveInviteImage(inviteData);
+                
+                // Adicionar o novo convite
+                invites.push(inviteData);
+                
+                // Ordenar por data do discurso
+                invites.sort((a, b) => {
+                    const dateA = parseDate(a.speechDate);
+                    const dateB = parseDate(b.speechDate);
+                    return dateA.localeCompare(dateB);
+                });
+                
+                localStorage.setItem('invitesControl', JSON.stringify(invites));
+                loadControlTable();
+                return true;
+            } catch (error) {
+                console.error('Erro ao gerar imagem:', error);
+                showNotification('Erro ao gerar a imagem do convite');
+                return false;
+            }
+        }
+        
+        // Carregar tabela de controle
+        function loadControlTable() {
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            controlTableBody.innerHTML = '';
             
             if (invites.length === 0) {
-                invitesList.innerHTML = '<p style="text-align: center; color: #666;">Nenhum convite gerado ainda</p>';
+                controlTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-table">
+                            Nenhum convite enviado ainda
+                        </td>
+                    </tr>
+                `;
                 return;
             }
             
-            invites.forEach((invite, index) => {
-                const inviteItem = document.createElement('div');
-                inviteItem.className = 'invite-item';
-                inviteItem.innerHTML = `
-                    <div class="invite-info">
-                        <strong>${invite.destinationCongregation}</strong><br>
-                        <small>${invite.suggestedSpeaker} - ${invite.speechDate}</small>
-                    </div>
-                    <div class="invite-actions">
-                        <button class="btn copy-invite-link" data-id="${invite.id}">Copiar Link</button>
-                        <button class="btn" onclick="viewInvite('${invite.id}')">Ver</button>
-                    </div>
+            invites.forEach((invite) => {
+                const row = document.createElement('tr');
+                const sendDate = new Date(invite.sendTimestamp).toLocaleDateString('pt-BR');
+                
+                row.innerHTML = `
+                    <td>${invite.speechDate}</td>
+                    <td>${invite.destinationCongregation}</td>
+                    <td>${invite.suggestedSpeaker}</td>
+                    <td>${invite.speechTheme}</td>
+                    <td>${sendDate}</td>
+                    <td><span class="status-sent">ENVIADO ✓</span></td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="table-btn btn-copy" onclick="copyInviteLink('${invite.id}')">Copiar</button>
+                            <button class="table-btn btn-view" onclick="viewInvite('${invite.id}')">Ver</button>
+                            <button class="table-btn btn-resend" onclick="resendInvite('${invite.id}')">Reenviar</button>
+                        </div>
+                    </td>
                 `;
-                invitesList.appendChild(inviteItem);
-            });
-            
-            // Adicionar eventos aos botões de copiar link
-            document.querySelectorAll('.copy-invite-link').forEach(button => {
-                button.addEventListener('click', function() {
-                    const inviteId = this.getAttribute('data-id');
-                    copyInviteLink(inviteId);
-                });
+                controlTableBody.appendChild(row);
             });
         }
         
@@ -690,8 +853,42 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             });
         }
         
-        // Enviar por WhatsApp - AGORA ABRE DIRETAMENTE
-        sendWhatsappBtn.addEventListener('click', function() {
+        // Reenviar convite
+        function resendInvite(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
+            
+            if (invite) {
+                const currentUrl = window.location.href.split('?')[0];
+                const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
+                
+                const message = `🎤 *REENVIO - CONVITE PARA ORADOR*
+
+Prezados irmãos,
+
+Estamos reenviando o convite para *${invite.suggestedSpeaker}* proferir o discurso:
+*"${invite.speechTheme}"*
+
+📅 *Data Sugerida:* ${invite.speechDate}
+📍 *Congregação:* ${invite.congregation}
+
+📎 *Clique no link abaixo para visualizar o convite completo:*
+${inviteUrl}
+
+Agradecemos antecipadamente pela atenção e colaboração.
+
+Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
+                
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification('WhatsApp aberto para reenvio!');
+            }
+        }
+        
+        // Enviar por WhatsApp
+        sendWhatsappBtn.addEventListener('click', async function() {
             // Primeiro atualizamos o template do convite
             updatePreview();
             
@@ -710,11 +907,15 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 speechTheme: speechThemeInput.value || '[Tema do Discurso]',
                 speechDate: speechDateInput.value || '[Data Sugerida]',
                 observation: observationInput.value || '[Observação]',
-                timestamp: Date.now()
+                sendTimestamp: Date.now()
             };
             
-            // Salvar no histórico
-            saveInviteToHistory(inviteData);
+            // Salvar no controle (isso já gera e salva a imagem)
+            const success = await saveInviteToControl(inviteData);
+            
+            if (!success) {
+                return; // Se houve erro na geração da imagem, para aqui
+            }
             
             // Criar URL para a página do convite
             const currentUrl = window.location.href.split('?')[0];
@@ -752,7 +953,7 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
             
-            showNotification('WhatsApp aberto com a mensagem pronta!');
+            showNotification('Convite enviado e salvo no controle! ✓');
         });
         
         // Verificar se deve mostrar um convite específico
@@ -766,46 +967,44 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             }
         }
         
-        // Mostrar página do convite
+        // Mostrar página do convite (AGORA MOSTRA A IMAGEM SALVA)
         function showInvitePage(inviteId) {
-            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
             const invite = invites.find(inv => inv.id === inviteId);
             
             if (invite) {
-                // Substituir todo o conteúdo da página pela visualização do convite
-                document.body.innerHTML = `
-                    <div class="container">
-                        <div class="invite-card" style="display: block;">
-                            <div class="invite-header">
-                                <h2>CONVITE PARA ORADOR</h2>
+                // Buscar a imagem salva no localStorage
+                const savedImage = localStorage.getItem(`invite_image_${inviteId}`);
+                
+                if (savedImage) {
+                    // Mostrar a imagem salva
+                    document.body.innerHTML = `
+                        <div class="container">
+                            <div style="text-align: center;">
+                                <h2>Convite para Orador</h2>
+                                <p><strong>Congregação ${invite.destinationCongregation}</strong> - ${invite.speechDate}</p>
+                                <img src="${savedImage}" alt="Convite para Orador" class="invite-image">
                             </div>
                             
-                            <div class="invite-body">
-                                ${generateInviteHtml(invite)}
-                            </div>
-                            
-                            <div class="invite-footer">
-                                <p>Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.</p>
-                                <p class="scripture">"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10</p>
+                            <div class="actions" style="margin-top: 30px;">
+                                <button class="btn" onclick="downloadInviteImage('${inviteId}')">Baixar Imagem</button>
+                                <button class="btn" onclick="downloadInviteAsPdfFromView('${inviteId}')">Baixar PDF</button>
+                                <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar</button>
                             </div>
                         </div>
-                        
-                        <div class="actions" style="margin-top: 30px;">
-                            <button class="btn" id="download-invite-image">Baixar Convite (Imagem)</button>
-                            <button class="btn" id="download-invite-pdf">Baixar PDF</button>
-                            <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar</button>
+                    `;
+                } else {
+                    // Se não encontrou a imagem, mostra mensagem de erro
+                    document.body.innerHTML = `
+                        <div class="container">
+                            <div style="text-align: center; padding: 50px;">
+                                <h2>Convite Não Encontrado</h2>
+                                <p>A imagem deste convite não está mais disponível.</p>
+                                <button class="btn" onclick="window.location.href = window.location.href.split('?')[0]">Voltar ao Gerador</button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                
-                // Adicionar eventos aos botões
-                document.getElementById('download-invite-image').addEventListener('click', function() {
-                    downloadInviteAsImage(invite);
-                });
-                
-                document.getElementById('download-invite-pdf').addEventListener('click', function() {
-                    downloadInviteAsPdf(invite);
-                });
+                    `;
+                }
             } else {
                 document.body.innerHTML = `
                     <div class="container">
@@ -819,70 +1018,41 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             }
         }
         
-        // Gerar HTML do convite
-        function generateInviteHtml(invite) {
-            return `
-                <p>Prezados irmãos da congregação <strong>${invite.destinationCongregation}</strong>,</p>
-                
-                <p class="scripture">"E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia." - Hebreus 10:24,25</p>
-                
-                <p>Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.</p>
-                
-                <h3>INFORMAÇÕES:</h3>
-                <ul>
-                    <li><strong>Congregação:</strong> ${invite.congregation}</li>
-                    <li><strong>Horário da Reunião:</strong> ${invite.meetingTime}</li>
-                    <li><strong>Endereço:</strong> ${invite.address}</li>
-                    <li><strong>Contato:</strong> ${invite.contact}</li>
-                </ul>
-                
-                <h3>DETALHES DO DISCURSO:</h3>
-                <ul>
-                    <li><strong>Orador Sugerido:</strong> ${invite.suggestedSpeaker}</li>
-                    <li><strong>Tema:</strong> ${invite.speechTheme}</li>
-                    <li><strong>Data Sugerida:</strong> ${invite.speechDate}</li>
-                </ul>
-                
-                ${invite.observation && invite.observation !== '[Observação]' ? `<p><strong>Observação:</strong> ${invite.observation}</p>` : ''}
-            `;
-        }
-        
-        // Baixar convite como imagem
-        function downloadInviteAsImage(invite) {
-            const inviteCard = document.querySelector('.invite-card');
-            
-            html2canvas(inviteCard, {
-                scale: 0.75,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            }).then(canvas => {
+        // Baixar imagem do convite (na página de visualização)
+        function downloadInviteImage(inviteId) {
+            const savedImage = localStorage.getItem(`invite_image_${inviteId}`);
+            if (savedImage) {
                 const link = document.createElement('a');
-                link.download = `convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.8);
+                link.download = `convite_${inviteId}.jpg`;
+                link.href = savedImage;
                 link.click();
-            });
+            }
         }
         
-        // Baixar convite como PDF
-        function downloadInviteAsPdf(invite) {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
+        // Baixar PDF do convite (na página de visualização)
+        function downloadInviteAsPdfFromView(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesControl') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
             
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const margin = 20;
-            let yPosition = margin;
-            
-            pdf.setFontSize(18);
-            pdf.setFont(undefined, 'bold');
-            pdf.setTextColor(21, 101, 192);
-            pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 15;
-            
-            // Restante do código do PDF (similar à função anterior)
-            // ... (implementação do conteúdo do PDF)
-            
-            pdf.save(`convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.pdf`);
+            if (invite) {
+                // Implementação similar à função generatePDF mas usando os dados do invite
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const margin = 20;
+                let yPosition = margin;
+                
+                pdf.setFontSize(18);
+                pdf.setFont(undefined, 'bold');
+                pdf.setTextColor(21, 101, 192);
+                pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 15;
+                
+                // ... (restante do código do PDF)
+                
+                pdf.save(`convite_${invite.destinationCongregation.replace(/\s+/g, '_')}.pdf`);
+            }
         }
         
         // Carregar configurações ao iniciar
@@ -908,6 +1078,15 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
             window.open(inviteUrl, '_blank');
         };
+        
+        // Função global para reenviar convite
+        window.resendInvite = resendInvite;
+        
+        // Função global para baixar imagem
+        window.downloadInviteImage = downloadInviteImage;
+        
+        // Função global para baixar PDF
+        window.downloadInviteAsPdfFromView = downloadInviteAsPdfFromView;
     </script>
 </body>
 </html>
