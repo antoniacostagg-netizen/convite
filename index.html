@@ -1070,7 +1070,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             
             try {
                 const canvas = await html2canvas(inviteCard, {
-                    scale: 0.75,
+                    scale: 2,
                     useCORS: true,
                     logging: false,
                     backgroundColor: '#ffffff'
@@ -1079,7 +1079,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 inviteCard.style.display = 'none';
                 
                 // Converter canvas para imagem
-                const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
                 
                 // Criar um ID único curto para o convite
                 const inviteId = 'inv_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -1087,7 +1087,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 // Salvar a imagem no localStorage com ID curto
                 localStorage.setItem(`invite_${inviteId}`, imgData);
                 
-                // Criar URL curta
+                // Criar URL curta para visualização
                 const currentUrl = window.location.href.split('?')[0];
                 const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
                 
@@ -1100,10 +1100,13 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                     <div style="text-align: center;">
                         <img src="${imgData}" alt="Prévia do Convite" style="max-width: 300px; border: 2px solid #1976d2; border-radius: 5px; margin: 10px 0;">
                     </div>
+                    <p><em>Este link abre o convite em formato de imagem para visualização e download.</em></p>
                     <button class="btn" onclick="copyToClipboard('${inviteUrl}')">Copiar Link</button>
                     <button class="btn" onclick="testInviteLink('${inviteUrl}')">Testar Link</button>
                 `;
                 
+                // Salvar no histórico
+                saveInviteToHistory(inviteUrl);
                 showNotification('Link do convite criado! Compartilhe com a congregação.');
                 
             } catch (error) {
@@ -1214,7 +1217,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             
             try {
                 const canvas = await html2canvas(inviteCard, {
-                    scale: 0.75,
+                    scale: 2,
                     useCORS: true,
                     logging: false,
                     backgroundColor: '#ffffff'
@@ -1223,7 +1226,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 inviteCard.style.display = 'none';
                 
                 // Converter canvas para imagem
-                const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
                 
                 // Criar um ID único curto para o convite
                 const inviteId = 'inv_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -1231,7 +1234,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 // Salvar a imagem no localStorage com ID curto
                 localStorage.setItem(`invite_${inviteId}`, imgData);
                 
-                // Criar URL curta
+                // Criar URL curta para visualização
                 const currentUrl = window.location.href.split('?')[0];
                 const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
                 
@@ -1539,7 +1542,7 @@ Segue informação sobre discurso programado:
             loadSpeakersList();
             updateSpeakerSelect();
             showNotification('Orador adicionado com sucesso!');
-        });
+        }
         
         // Atualizar seletor de oradores
         function updateSpeakerSelect() {
@@ -1718,7 +1721,7 @@ Segue informação sobre discurso programado:
                 showNotification('Lista exportada como imagem!');
             }).catch(error => {
                 console.error('Erro ao exportar imagem:', error);
-                showNotification('Erro ao exportar imagem. Trente novamente.');
+                showNotification('Erro ao exportar imagem. Tente novamente.');
             });
         });
         
