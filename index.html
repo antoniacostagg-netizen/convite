@@ -478,9 +478,18 @@
         
         .short-url {
             font-size: 0.9rem;
-            color: #1976d2;
+            color: #1976c0;
             text-decoration: none;
             word-break: break-all;
+        }
+        
+        .simple-options {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
         }
         
         @media (max-width: 768px) {
@@ -657,22 +666,19 @@
                 <div class="preview-content" id="preview-content"></div>
             </div>
             
-            <div class="link-section">
-                <h3>🔗 Compartilhar Convite</h3>
+            <!-- NOVA SEÇÃO: Opções Simplificadas -->
+            <div class="simple-options">
+                <h3>📤 Opções de Convite</h3>
                 <p>Escolha como deseja compartilhar o convite:</p>
                 <div class="actions">
-                    <button class="btn" id="create-invite-link">Criar Link do Convite</button>
-                    <button class="btn btn-whatsapp" id="send-invite-whatsapp">Enviar pelo WhatsApp</button>
-                    <button class="btn btn-google" id="create-word-doc">Criar Documento Word</button>
-                </div>
-                <div class="link-display" id="invite-link-display">
-                    <!-- Link do convite será exibido aqui -->
+                    <button class="btn" id="download-image">🖼️ Baixar Imagem</button>
+                    <button class="btn" id="download-pdf">📄 Baixar PDF</button>
+                    <button class="btn btn-whatsapp" id="send-whatsapp">💬 Enviar Texto pelo WhatsApp</button>
                 </div>
             </div>
             
             <div class="actions">
                 <button class="btn" id="update-preview">Atualizar Prévia</button>
-                <button class="btn" id="generate-pdf">Gerar PDF</button>
             </div>
         </div>
         
@@ -785,11 +791,9 @@
         const observationInput = document.getElementById('observation');
         const saveConfigBtn = document.getElementById('save-config');
         const updatePreviewBtn = document.getElementById('update-preview');
-        const generatePdfBtn = document.getElementById('generate-pdf');
-        const createInviteLinkBtn = document.getElementById('create-invite-link');
-        const sendInviteWhatsappBtn = document.getElementById('send-invite-whatsapp');
-        const createWordDocBtn = document.getElementById('create-word-doc');
-        const inviteLinkDisplay = document.getElementById('invite-link-display');
+        const downloadImageBtn = document.getElementById('download-image');
+        const downloadPdfBtn = document.getElementById('download-pdf');
+        const sendWhatsappBtn = document.getElementById('send-whatsapp');
         const previewContent = document.getElementById('preview-content');
         const inviteBody = document.getElementById('invite-body');
         
@@ -944,8 +948,45 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
         // Atualizar prévia quando o botão for clicado
         updatePreviewBtn.addEventListener('click', updatePreview);
         
-        // Gerar PDF do convite
-        generatePdfBtn.addEventListener('click', function() {
+        // ========== NOVAS FUNÇÕES SIMPLIFICADAS ==========
+        
+        // Baixar Imagem
+        downloadImageBtn.addEventListener('click', async function() {
+            showNotification('Gerando imagem do convite...');
+            
+            const inviteCard = document.getElementById('invite-card');
+            inviteCard.style.display = 'block';
+            
+            try {
+                const canvas = await html2canvas(inviteCard, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const imageData = canvas.toDataURL('image/png');
+                
+                // Criar link para download
+                const link = document.createElement('a');
+                link.download = `convite_orador_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = imageData;
+                link.click();
+                
+                showNotification('Imagem baixada com sucesso!');
+                
+            } catch (error) {
+                console.error('Erro ao gerar imagem:', error);
+                showNotification('Erro ao gerar imagem. Tente novamente.');
+            } finally {
+                inviteCard.style.display = 'none';
+            }
+        });
+        
+        // Baixar PDF
+        downloadPdfBtn.addEventListener('click', function() {
+            showNotification('Gerando PDF do convite...');
+            
             const congregation = congregationInput.value || '[Nome da Congregação]';
             const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
             const address = addressInput.value || '[Endereço da Congregação]';
@@ -1054,17 +1095,11 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             pdf.text('mais nada." - Malaquias 3:10', margin, yPosition);
             
             pdf.save('Convite_Orador.pdf');
-            showNotification('PDF gerado com sucesso!');
+            showNotification('PDF baixado com sucesso!');
         });
         
-        // Criar Link do Convite - MÉTODO CORRIGIDO
-        createInviteLinkBtn.addEventListener('click', async function() {
-            showNotification('Gerando link do convite...');
-            
-            // Primeiro atualiza o template
-            updatePreview();
-            
-            // Gerar PDF em base64
+        // Enviar Texto pelo WhatsApp
+        sendWhatsappBtn.addEventListener('click', function() {
             const congregation = congregationInput.value || '[Nome da Congregação]';
             const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
             const address = addressInput.value || '[Endereço da Congregação]';
@@ -1074,398 +1109,39 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
             const speechDate = speechDateInput.value || '[Data Sugerida]';
             const observation = observationInput.value || '[Observação]';
-            
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const margin = 20;
-            let yPosition = margin;
-            
-            // Título
-            pdf.setFontSize(18);
-            pdf.setFont(undefined, 'bold');
-            pdf.setTextColor(21, 101, 192);
-            pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 15;
-            
-            // Saudação
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`Prezados irmãos da congregação ${destinationCongregation},`, margin, yPosition);
-            yPosition += 10;
-            
-            // Texto bíblico
-            pdf.setFont(undefined, 'italic');
-            pdf.text('"E pensemos uns nos outros para nos estimular ao amor e às boas', margin, yPosition);
-            yPosition += 5;
-            pdf.text('obras, não deixando de nos reunir, como é costume de alguns,', margin, yPosition);
-            yPosition += 5;
-            pdf.text('mas nos encorajando uns aos outros, e ainda mais ao passo', margin, yPosition);
-            yPosition += 5;
-            pdf.text('que vocês veem chegar o dia." - Hebreus 10:24,25', margin, yPosition);
-            yPosition += 10;
-            
-            // Texto introdutório
-            pdf.setFont(undefined, 'normal');
-            pdf.text('Precisamos nos estimular ao amor e às boas obras. Por isso, as boas', margin, yPosition);
-            yPosition += 5;
-            pdf.text('companhias de nossos irmãos são muito importantes. Sendo assim,', margin, yPosition);
-            yPosition += 5;
-            pdf.text('gostaríamos de convidar um dos oradores da sua congregação para', margin, yPosition);
-            yPosition += 5;
-            pdf.text('proferir um discurso público aqui na nossa congregação.', margin, yPosition);
-            yPosition += 15;
-            
-            // Informações
-            pdf.setFont(undefined, 'bold');
-            pdf.text('INFORMAÇÕES:', margin, yPosition);
-            yPosition += 8;
-            
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`• Congregação: ${congregation}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Horário da Reunião: ${meetingTime}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Endereço: ${address}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Contato: ${contact}`, margin, yPosition);
-            yPosition += 12;
-            
-            // Detalhes do discurso
-            pdf.setFont(undefined, 'bold');
-            pdf.text('DETALHES DO DISCURSO:', margin, yPosition);
-            yPosition += 8;
-            
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`• Orador Sugerido: ${suggestedSpeaker}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Tema: ${speechTheme}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Data Sugerida: ${speechDate}`, margin, yPosition);
-            yPosition += 12;
-            
-            // Observação
-            if (observation && observation !== '[Observação]') {
-                pdf.setFont(undefined, 'bold');
-                pdf.text('Observação:', margin, yPosition);
-                yPosition += 8;
-                
-                pdf.setFont(undefined, 'normal');
-                const observationLines = pdf.splitTextToSize(observation, pageWidth - 2 * margin);
-                pdf.text(observationLines, margin, yPosition);
-                yPosition += observationLines.length * 6 + 8;
-            }
-            
-            // Agradecimento
-            pdf.text('Agradecemos muito a colaboração para os arranjos da obra e', margin, yPosition);
-            yPosition += 5;
-            pdf.text('arranjos teocráticos.', margin, yPosition);
-            yPosition += 12;
-            
-            // Texto bíblico final
-            pdf.setFont(undefined, 'italic');
-            pdf.text('"E vejam se não abrirei para vocês as comportas dos céus e se', margin, yPosition);
-            yPosition += 5;
-            pdf.text('não derramarei sobre vocês uma bênção até que não falte', margin, yPosition);
-            yPosition += 5;
-            pdf.text('mais nada." - Malaquias 3:10', margin, yPosition);
-            
-            // Gerar PDF em base64
-            const pdfBase64 = pdf.output('datauristring');
-            
-            // Criar um ID único curto para o convite
-            const inviteId = 'inv_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            
-            // Salvar o PDF no localStorage com ID curto
-            localStorage.setItem(`invite_pdf_${inviteId}`, pdfBase64);
-            
-            // Criar URL para visualização do PDF
-            const pdfUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + window.location.pathname)}?view=pdf&id=${inviteId}&embedded=true`;
-            
-            // Exibir o link
-            inviteLinkDisplay.style.display = 'block';
-            inviteLinkDisplay.innerHTML = `
-                <strong>🔗 Link do Convite (PDF):</strong><br>
-                <a href="${pdfUrl}" target="_blank" class="short-url">${pdfUrl}</a>
-                <br><br>
-                <p><em>Este link abre o convite em formato PDF para visualização e download.</em></p>
-                <button class="btn" onclick="copyToClipboard('${pdfUrl}')">Copiar Link</button>
-                <button class="btn" onclick="testInviteLink('${pdfUrl}')">Testar Link</button>
-            `;
-            
-            showNotification('Link do convite criado! Compartilhe com a congregação.');
-        });
-        
-        // Criar Documento Word Online
-        createWordDocBtn.addEventListener('click', function() {
-            showNotification('Gerando documento Word...');
-            
-            // Primeiro atualiza o template
-            updatePreview();
-            
-            const congregation = congregationInput.value || '[Nome da Congregação]';
-            const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
-            const address = addressInput.value || '[Endereço da Congregação]';
-            const contact = contactInput.value || '[Contato para Confirmação]';
-            const suggestedSpeaker = suggestedSpeakerInput.value || '[Orador Sugerido]';
-            const destinationCongregation = destinationCongregationInput.value || '[Congregação Destinatária]';
-            const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
-            const speechDate = speechDateInput.value || '[Data Sugerida]';
-            const observation = observationInput.value || '[Observação]';
-            
-            // Criar conteúdo HTML para o documento
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Convite para Orador</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 40px; }
-                        h1 { color: #1565c0; text-align: center; }
-                        h2 { color: #1976d2; border-bottom: 1px solid #bbdefb; padding-bottom: 10px; }
-                        .scripture { font-style: italic; margin: 15px 0; padding: 10px; background-color: #f1f8ff; border-left: 3px solid #1976d2; }
-                        ul { margin: 15px 0; }
-                        li { margin-bottom: 8px; }
-                        .footer { margin-top: 30px; font-style: italic; text-align: center; color: #546e7a; border-top: 1px solid #e3f2fd; padding-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>CONVITE PARA ORADOR</h1>
-                    
-                    <p>Prezados irmãos da congregação <strong>${destinationCongregation}</strong>,</p>
-                    
-                    <p class="scripture">"E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia." - Hebreus 10:24,25</p>
-                    
-                    <p>Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.</p>
-                    
-                    <h2>INFORMAÇÕES:</h2>
-                    <ul>
-                        <li><strong>Congregação:</strong> ${congregation}</li>
-                        <li><strong>Horário da Reunião:</strong> ${meetingTime}</li>
-                        <li><strong>Endereço:</strong> ${address}</li>
-                        <li><strong>Contato:</strong> ${contact}</li>
-                    </ul>
-                    
-                    <h2>DETALHES DO DISCURSO:</h2>
-                    <ul>
-                        <li><strong>Orador Sugerido:</strong> ${suggestedSpeaker}</li>
-                        <li><strong>Tema:</strong> ${speechTheme}</li>
-                        <li><strong>Data Sugerida:</strong> ${speechDate}</li>
-                    </ul>
-                    
-                    ${observation && observation !== '[Observação]' ? `<p><strong>Observação:</strong> ${observation}</p>` : ''}
-                    
-                    <div class="footer">
-                        <p>Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.</p>
-                        <p class="scripture">"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10</p>
-                    </div>
-                </body>
-                </html>
-            `;
-            
-            // Codificar o conteúdo HTML para URL
-            const encodedHtml = encodeURIComponent(htmlContent);
-            
-            // Criar URL para o Word Online
-            const wordUrl = `https://view.officeapps.live.com/op/embed.aspx?src=data:text/html;charset=utf-8,${encodedHtml}`;
-            
-            // Exibir o link
-            inviteLinkDisplay.style.display = 'block';
-            inviteLinkDisplay.innerHTML = `
-                <strong>📝 Documento Word Online:</strong><br>
-                <a href="${wordUrl}" target="_blank" class="short-url">${wordUrl}</a>
-                <br><br>
-                <p><em>Este link abre o convite em formato editável no Word Online.</em></p>
-                <button class="btn" onclick="copyToClipboard('${wordUrl}')">Copiar Link</button>
-                <button class="btn" onclick="testInviteLink('${wordUrl}')">Abrir Documento</button>
-            `;
-            
-            showNotification('Documento Word criado! Compartilhe o link.');
-        });
-        
-        // Enviar Convite pelo WhatsApp
-        sendInviteWhatsappBtn.addEventListener('click', async function() {
-            showNotification('Preparando convite para WhatsApp...');
-            
-            // Primeiro atualiza o template
-            updatePreview();
-            
-            // Gerar PDF em base64
-            const congregation = congregationInput.value || '[Nome da Congregação]';
-            const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
-            const address = addressInput.value || '[Endereço da Congregação]';
-            const contact = contactInput.value || '[Contato para Confirmação]';
-            const suggestedSpeaker = suggestedSpeakerInput.value || '[Orador Sugerido]';
-            const destinationCongregation = destinationCongregationInput.value || '[Congregação Destinatária]';
-            const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
-            const speechDate = speechDateInput.value || '[Data Sugerida]';
-            const observation = observationInput.value || '[Observação]';
-            
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const margin = 20;
-            let yPosition = margin;
-            
-            // Título
-            pdf.setFontSize(18);
-            pdf.setFont(undefined, 'bold');
-            pdf.setTextColor(21, 101, 192);
-            pdf.text('CONVITE PARA ORADOR', pageWidth / 2, yPosition, { align: 'center' });
-            yPosition += 15;
-            
-            // Saudação
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`Prezados irmãos da congregação ${destinationCongregation},`, margin, yPosition);
-            yPosition += 10;
-            
-            // Texto bíblico
-            pdf.setFont(undefined, 'italic');
-            pdf.text('"E pensemos uns nos outros para nos estimular ao amor e às boas', margin, yPosition);
-            yPosition += 5;
-            pdf.text('obras, não deixando de nos reunir, como é costume de alguns,', margin, yPosition);
-            yPosition += 5;
-            pdf.text('mas nos encorajando uns aos outros, e ainda mais ao passo', margin, yPosition);
-            yPosition += 5;
-            pdf.text('que vocês veem chegar o dia." - Hebreus 10:24,25', margin, yPosition);
-            yPosition += 10;
-            
-            // Texto introdutório
-            pdf.setFont(undefined, 'normal');
-            pdf.text('Precisamos nos estimular ao amor e às boas obras. Por isso, as boas', margin, yPosition);
-            yPosition += 5;
-            pdf.text('companhias de nossos irmãos são muito importantes. Sendo assim,', margin, yPosition);
-            yPosition += 5;
-            pdf.text('gostaríamos de convidar um dos oradores da sua congregação para', margin, yPosition);
-            yPosition += 5;
-            pdf.text('proferir um discurso público aqui na nossa congregação.', margin, yPosition);
-            yPosition += 15;
-            
-            // Informações
-            pdf.setFont(undefined, 'bold');
-            pdf.text('INFORMAÇÕES:', margin, yPosition);
-            yPosition += 8;
-            
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`• Congregação: ${congregation}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Horário da Reunião: ${meetingTime}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Endereço: ${address}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Contato: ${contact}`, margin, yPosition);
-            yPosition += 12;
-            
-            // Detalhes do discurso
-            pdf.setFont(undefined, 'bold');
-            pdf.text('DETALHES DO DISCURSO:', margin, yPosition);
-            yPosition += 8;
-            
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`• Orador Sugerido: ${suggestedSpeaker}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Tema: ${speechTheme}`, margin, yPosition);
-            yPosition += 6;
-            pdf.text(`• Data Sugerida: ${speechDate}`, margin, yPosition);
-            yPosition += 12;
-            
-            // Observação
-            if (observation && observation !== '[Observação]') {
-                pdf.setFont(undefined, 'bold');
-                pdf.text('Observação:', margin, yPosition);
-                yPosition += 8;
-                
-                pdf.setFont(undefined, 'normal');
-                const observationLines = pdf.splitTextToSize(observation, pageWidth - 2 * margin);
-                pdf.text(observationLines, margin, yPosition);
-                yPosition += observationLines.length * 6 + 8;
-            }
-            
-            // Agradecimento
-            pdf.text('Agradecemos muito a colaboração para os arranjos da obra e', margin, yPosition);
-            yPosition += 5;
-            pdf.text('arranjos teocráticos.', margin, yPosition);
-            yPosition += 12;
-            
-            // Texto bíblico final
-            pdf.setFont(undefined, 'italic');
-            pdf.text('"E vejam se não abrirei para vocês as comportas dos céus e se', margin, yPosition);
-            yPosition += 5;
-            pdf.text('não derramarei sobre vocês uma bênção até que não falte', margin, yPosition);
-            yPosition += 5;
-            pdf.text('mais nada." - Malaquias 3:10', margin, yPosition);
-            
-            // Gerar PDF em base64
-            const pdfBase64 = pdf.output('datauristring');
-            
-            // Criar um ID único curto para o convite
-            const inviteId = 'inv_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            
-            // Salvar o PDF no localStorage com ID curto
-            localStorage.setItem(`invite_pdf_${inviteId}`, pdfBase64);
-            
-            // Criar URL para visualização do PDF
-            const pdfUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + window.location.pathname)}?view=pdf&id=${inviteId}&embedded=true`;
             
             const message = `🎤 *CONVITE PARA ORADOR*
 
-Prezados irmãos,
+Prezados irmãos da congregação ${destinationCongregation},
 
-Conforme Hebreus 10:24,25, precisamos nos estimular ao amor e às boas obras. 
+Conforme Hebreus 10:24,25: "E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia."
 
-Gostaríamos de convidar *${suggestedSpeaker}* para proferir o discurso:
-*"${speechTheme}"*
+Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.
 
-📅 *Data Sugerida:* ${speechDate}
-📍 *Congregação:* ${congregation}
+*INFORMAÇÕES:*
+• Congregação: ${congregation}
+• Horário da Reunião: ${meetingTime}
+• Endereço: ${address}
+• Contato: ${contact}
 
-📎 *Clique no link abaixo para visualizar e baixar o convite em PDF:*
-${pdfUrl}
+*DETALHES DO DISCURSO:*
+• Orador Sugerido: ${suggestedSpeaker}
+• Tema: ${speechTheme}
+• Data Sugerida: ${speechDate}
 
-Agradecemos antecipadamente pela atenção e colaboração.
+${observation && observation !== '[Observação]' ? `*Observação:* ${observation}\n\n` : ''}
+Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.
 
-Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
+"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10`;
                 
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
             
-            // Salvar no histórico
-            saveInviteToHistory(pdfUrl);
             showNotification('WhatsApp aberto para envio do convite!');
         });
         
-        // Salvar convite no histórico
-        function saveInviteToHistory(inviteUrl) {
-            const inviteData = {
-                id: 'invite_' + Date.now(),
-                congregation: congregationInput.value || '[Nome da Congregação]',
-                meetingTime: meetingTimeInput.value || '[Horário da Reunião]',
-                address: addressInput.value || '[Endereço da Congregação]',
-                contact: contactInput.value || '[Contato para Confirmação]',
-                suggestedSpeaker: suggestedSpeakerInput.value || '[Orador Sugerido]',
-                destinationCongregation: destinationCongregationInput.value || '[Congregação Destinatária]',
-                speechTheme: speechThemeInput.value || '[Tema do Discurso]',
-                speechDate: speechDateInput.value || '[Data Sugerida]',
-                observation: observationInput.value || '[Observação]',
-                sendTimestamp: Date.now(),
-                inviteUrl: inviteUrl
-            };
-            
-            let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-            invites.push(inviteData);
-            localStorage.setItem('invitesHistory', JSON.stringify(invites));
-            
-            loadArrangementTable();
-        }
-        
-        // ========== ABA ARRANJO ==========
+        // ========== FUNÇÕES EXISTENTES DAS OUTRAS ABAS ==========
         
         // Carregar tabela de arranjos
         function loadArrangementTable() {
@@ -1553,131 +1229,6 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             }
             return '9999-12-31';
         }
-        
-        // Reenviar convite
-        function resendInvite(inviteId) {
-            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-            const invite = invites.find(inv => inv.id === inviteId);
-            
-            if (invite) {
-                const suggestedSpeaker = invite.suggestedSpeaker || '[Orador Sugerido]';
-                const speechTheme = invite.speechTheme || '[Tema do Discurso]';
-                const speechDate = invite.speechDate || '[Data Sugerida]';
-                const congregation = invite.congregation || '[Nome da Congregação]';
-                
-                const message = `🎤 *REENVIO - CONVITE PARA ORADOR*
-
-Prezados irmãos,
-
-Estamos reenviando o convite para *${suggestedSpeaker}* proferir o discurso:
-*"${speechTheme}"*
-
-📅 *Data Sugerida:* ${speechDate}
-📍 *Congregação:* ${congregation}
-
-📎 *Clique no link abaixo para visualizar o convite completo:*
-${invite.inviteUrl}
-
-Agradecemos antecipadamente pela atenção e colaboração.
-
-Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
-                
-                const encodedMessage = encodeURIComponent(message);
-                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank');
-                
-                showNotification('WhatsApp aberto para reenvio!');
-            }
-        }
-        
-        // Enviar para Presidente
-        function sendToPresident(inviteId) {
-            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-            const invite = invites.find(inv => inv.id === inviteId);
-            
-            if (invite) {
-                const suggestedSpeaker = invite.suggestedSpeaker || '[Orador Sugerido]';
-                const speechTheme = invite.speechTheme || '[Tema do Discurso]';
-                const speechDate = invite.speechDate || '[Data Sugerida]';
-                const destinationCongregation = invite.destinationCongregation || '[Congregação Destinatária]';
-                
-                const message = `📋 *INFORMAÇÃO PARA O PRESIDENTE*
-
-Prezado Presidente,
-
-Segue informação sobre discurso programado:
-
-🗓️ *Data:* ${speechDate}
-👤 *Orador:* ${suggestedSpeaker}
-📖 *Tema:* ${speechTheme}
-📍 *Congregação:* ${destinationCongregation}
-
-*Informação enviada pelo Sistema de Oradores*`;
-                
-                const encodedMessage = encodeURIComponent(message);
-                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank');
-                
-                showNotification('WhatsApp aberto para enviar ao presidente!');
-            }
-        }
-        
-        // Excluir convite
-        function deleteInvite(inviteId) {
-            if (confirm('Deseja excluir este convite do histórico?')) {
-                let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-                invites = invites.filter(inv => inv.id !== inviteId);
-                localStorage.setItem('invitesHistory', JSON.stringify(invites));
-                loadArrangementTable();
-                showNotification('Convite excluído com sucesso!');
-            }
-        }
-        
-        // Exportar arranjo como imagem
-        exportArrangementImageBtn.addEventListener('click', function() {
-            const tableElement = document.getElementById('arrangement-table-visual');
-            
-            html2canvas(tableElement, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                logging: false
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `discursos_programados_${new Date().toISOString().split('T')[0]}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
-                showNotification('Tabela exportada como imagem!');
-            }).catch(error => {
-                console.error('Erro ao exportar imagem:', error);
-                showNotification('Erro ao exportar imagem. Tente novamente.');
-            });
-        });
-        
-        // Exportar arranjo como PDF
-        exportArrangementPdfBtn.addEventListener('click', function() {
-            const tableElement = document.getElementById('arrangement-table-visual');
-            
-            html2canvas(tableElement, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                logging: false
-            }).then(canvas => {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/png');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`discursos_programados_${new Date().toISOString().split('T')[0]}.pdf`);
-                showNotification('Tabela exportada como PDF!');
-            }).catch(error => {
-                console.error('Erro ao exportar PDF:', error);
-                showNotification('Erro ao exportar PDF. Tente novamente.');
-            });
-        });
-        
-        // ========== ABA ORADORES LOCAIS ==========
         
         // Adicionar orador
         addSpeakerBtn.addEventListener('click', function() {
@@ -1842,79 +1393,6 @@ Segue informação sobre discurso programado:
             });
         }
         
-        // Excluir orador
-        function deleteSpeaker(speakerId) {
-            if (confirm('Deseja excluir este orador e todos os seus discursos?')) {
-                let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-                speakers = speakers.filter(s => s.id !== speakerId);
-                localStorage.setItem('localSpeakers', JSON.stringify(speakers));
-                loadSpeakersList();
-                updateSpeakerSelect();
-                showNotification('Orador excluído com sucesso!');
-            }
-        }
-        
-        // Excluir discurso
-        function deleteSpeech(speakerId, speechId) {
-            if (confirm('Deseja excluir este discurso?')) {
-                let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-                const speakerIndex = speakers.findIndex(s => s.id === speakerId);
-                
-                if (speakerIndex !== -1) {
-                    speakers[speakerIndex].speeches = speakers[speakerIndex].speeches.filter(s => s.id !== speechId);
-                    localStorage.setItem('localSpeakers', JSON.stringify(speakers));
-                    loadSpeakersList();
-                    showNotification('Discurso excluído com sucesso!');
-                }
-            }
-        }
-        
-        // Exportar lista de oradores como imagem
-        exportSpeakersImageBtn.addEventListener('click', function() {
-            const tableElement = document.getElementById('speakers-table-visual');
-            
-            html2canvas(tableElement, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                logging: false
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `lista_oradores_${new Date().toISOString().split('T')[0]}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
-                showNotification('Lista exportada como imagem!');
-            }).catch(error => {
-                console.error('Erro ao exportar imagem:', error);
-                showNotification('Erro ao exportar imagem. Tente novamente.');
-            });
-        });
-        
-        // Exportar lista de oradores como PDF
-        exportSpeakersPdfBtn.addEventListener('click', function() {
-            const tableElement = document.getElementById('speakers-table-visual');
-            
-            html2canvas(tableElement, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                logging: false
-            }).then(canvas => {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/png');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`lista_oradores_${new Date().toISOString().split('T')[0]}.pdf`);
-                showNotification('Lista exportada como PDF!');
-            }).catch(error => {
-                console.error('Erro ao exportar PDF:', error);
-                showNotification('Erro ao exportar PDF. Tente novamente.');
-            });
-        });
-        
-        // ========== BACKUP DO SISTEMA ==========
-        
         // Fazer backup
         backupDataBtn.addEventListener('click', function() {
             const backupData = {
@@ -1940,49 +1418,6 @@ Segue informação sobre discurso programado:
             showNotification('Backup completo criado com sucesso!');
         });
         
-        // Restaurar backup
-        restoreDataBtn.addEventListener('click', function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(event) {
-                    try {
-                        const backupData = JSON.parse(event.target.result);
-                        
-                        // Restaurar dados
-                        if (backupData.invitesHistory) {
-                            localStorage.setItem('invitesHistory', JSON.stringify(backupData.invitesHistory));
-                        }
-                        
-                        if (backupData.localSpeakers) {
-                            localStorage.setItem('localSpeakers', JSON.stringify(backupData.localSpeakers));
-                        }
-                        
-                        if (backupData.config) {
-                            if (backupData.config.congregation) localStorage.setItem('congregation', backupData.config.congregation);
-                            if (backupData.config.meetingTime) localStorage.setItem('meetingTime', backupData.config.meetingTime);
-                            if (backupData.config.address) localStorage.setItem('address', backupData.config.address);
-                            if (backupData.config.contact) localStorage.setItem('contact', backupData.config.contact);
-                        }
-                        
-                        loadSavedConfig();
-                        showNotification('Backup restaurado com sucesso!');
-                    } catch (error) {
-                        showNotification('Erro ao restaurar backup: arquivo inválido');
-                    }
-                };
-                
-                reader.readAsText(file);
-            };
-            
-            input.click();
-        });
-        
         // ========== FUNÇÕES GLOBAIS ==========
         
         window.copyToClipboard = function(text) {
@@ -1991,69 +1426,9 @@ Segue informação sobre discurso programado:
             });
         };
         
-        window.testInviteLink = function(url) {
-            window.open(url, '_blank');
-        };
-        
-        // Verificar se deve mostrar um convite específico
-        function checkForInviteView() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const viewMode = urlParams.get('view');
-            const inviteId = urlParams.get('id');
-            
-            if (viewMode === 'pdf' && inviteId) {
-                showPdfFromStorage(inviteId);
-            }
-        }
-        
-        // Mostrar PDF a partir do localStorage
-        function showPdfFromStorage(inviteId) {
-            const savedPdf = localStorage.getItem(`invite_pdf_${inviteId}`);
-            
-            if (savedPdf) {
-                document.body.innerHTML = `
-                    <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #f5f5f5;">
-                        <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 100%; text-align: center;">
-                            <h2 style="color: #1565c0; margin-bottom: 15px;">Convite para Orador</h2>
-                            <iframe src="${savedPdf}" style="width: 100%; height: 600px; border: 2px solid #1976d2; border-radius: 5px;"></iframe>
-                        </div>
-                        <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button onclick="downloadPdf('${savedPdf}')" style="padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                📥 Baixar PDF
-                            </button>
-                            <button onclick="window.print()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                🖨️ Imprimir
-                            </button>
-                            <button onclick="window.close()" style="padding: 10px 20px; background: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                Fechar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                document.body.innerHTML = `
-                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
-                        <div style="text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                            <h2 style="color: #666; margin-bottom: 20px;">Convite Não Encontrado</h2>
-                            <p style="color: #888; margin-bottom: 20px;">Este convite não está mais disponível ou expirou.</p>
-                            <button class="btn" onclick="window.history.back()">Voltar</button>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-        
-        window.downloadPdf = function(pdfData) {
-            const link = document.createElement('a');
-            link.download = 'convite_orador.pdf';
-            link.href = pdfData;
-            link.click();
-        };
-        
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             loadSavedConfig();
-            checkForInviteView();
         });
         
         // Atualizar prévia quando os campos editáveis mudarem
