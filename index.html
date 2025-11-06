@@ -260,6 +260,7 @@
             border-left: 3px solid #1976d2;
         }
         
+        /* Tabelas para desktop */
         .control-table {
             width: 100%;
             border-collapse: collapse;
@@ -285,6 +286,41 @@
         
         .control-table tr:hover {
             background-color: #f8fbff;
+        }
+        
+        /* Tabelas para mobile - visual simples */
+        .mobile-table {
+            display: none;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .mobile-table-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1976d2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-table-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e3f2fd;
+        }
+        
+        .mobile-table-label {
+            font-weight: 600;
+            color: #1565c0;
+            min-width: 120px;
+        }
+        
+        .mobile-table-value {
+            flex: 1;
+            text-align: right;
         }
         
         .status-sent {
@@ -441,6 +477,7 @@
             flex-wrap: wrap;
         }
         
+        /* Tabela visual para exportação (formato A4) */
         .table-visual {
             background: white;
             border-radius: 8px;
@@ -448,6 +485,9 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin: 20px 0;
             padding: 20px;
+            width: 210mm; /* Largura A4 */
+            min-height: 297mm; /* Altura A4 */
+            display: none; /* Escondida no site, usada apenas para exportação */
         }
         
         .table-visual table {
@@ -492,9 +532,11 @@
             text-align: center;
         }
         
+        /* Estilos específicos para mobile */
         @media (max-width: 768px) {
             .container {
                 padding: 0;
+                border-radius: 0;
             }
             
             .tabs {
@@ -503,10 +545,11 @@
             
             .tab {
                 padding: 12px;
+                font-size: 0.9rem;
             }
             
             .tab-content {
-                padding: 20px;
+                padding: 15px;
             }
             
             .actions {
@@ -516,6 +559,8 @@
             .btn {
                 width: 100%;
                 margin: 5px 0;
+                padding: 15px;
+                font-size: 1rem;
             }
             
             .table-actions {
@@ -524,6 +569,8 @@
             
             .table-btn {
                 margin-bottom: 5px;
+                width: 100%;
+                padding: 10px;
             }
             
             .backup-options, .export-options {
@@ -539,6 +586,52 @@
                 margin-top: 10px;
                 width: 100%;
                 justify-content: flex-start;
+            }
+            
+            /* Esconder tabelas desktop em mobile */
+            .control-table {
+                display: none;
+            }
+            
+            /* Mostrar tabelas mobile */
+            .mobile-table {
+                display: block;
+            }
+            
+            /* Ajustes para formulários em mobile */
+            .form-section {
+                padding: 15px;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            h3 {
+                font-size: 1.1rem;
+            }
+            
+            .preview {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+        }
+        
+        /* Estilos para desktop */
+        @media (min-width: 769px) {
+            .mobile-table {
+                display: none;
+            }
+            
+            .control-table {
+                display: table;
             }
         }
     </style>
@@ -574,7 +667,7 @@
                 <button class="btn" id="export-arrangement-pdf">Exportar como PDF</button>
             </div>
             
-            <!-- Tabela Visual para Exportação -->
+            <!-- Tabela Visual para Exportação (A4) - Escondida -->
             <div class="table-visual" id="arrangement-table-visual">
                 <h3 style="text-align: center; margin-bottom: 20px; color: #1976d2;">Discursos Programados</h3>
                 <table>
@@ -592,7 +685,7 @@
                 </table>
             </div>
             
-            <!-- Tabela Original com Ações -->
+            <!-- Tabela Desktop -->
             <h3 style="margin-top: 30px;">Controle Detalhado</h3>
             <table class="control-table">
                 <thead>
@@ -610,6 +703,11 @@
                     <!-- Tabela será preenchida via JavaScript -->
                 </tbody>
             </table>
+            
+            <!-- Tabela Mobile -->
+            <div class="mobile-table" id="arrangement-mobile-table">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
         </div>
         
         <!-- ABA 2: Gerar Convite -->
@@ -666,7 +764,7 @@
                 <div class="preview-content" id="preview-content"></div>
             </div>
             
-            <!-- NOVA SEÇÃO: Opções Simplificadas -->
+            <!-- Opções Simplificadas -->
             <div class="simple-options">
                 <h3>📤 Opções de Convite</h3>
                 <p>Escolha como deseja compartilhar o convite:</p>
@@ -723,7 +821,7 @@
                 <button class="btn" id="export-speakers-pdf">Exportar como PDF</button>
             </div>
             
-            <!-- Tabela Visual para Exportação -->
+            <!-- Tabela Visual para Exportação (A4) - Escondida -->
             <div class="table-visual" id="speakers-table-visual">
                 <h3 style="text-align: center; margin-bottom: 20px; color: #1976d2;">Lista de Oradores Locais</h3>
                 <table>
@@ -740,16 +838,31 @@
                 </table>
             </div>
             
-            <!-- Lista Original -->
-            <h3 style="margin-top: 30px;">Detalhes dos Oradores</h3>
-            <div class="speakers-list" id="speakers-list">
-                <!-- Lista de oradores será preenchida via JavaScript -->
+            <!-- Tabela Desktop -->
+            <h3 style="margin-top: 30px;">Oradores Cadastrados</h3>
+            <table class="control-table">
+                <thead>
+                    <tr>
+                        <th>Orador</th>
+                        <th>Contato</th>
+                        <th>Discursos Disponíveis</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="speakers-table-actions">
+                    <!-- Tabela será preenchida via JavaScript -->
+                </tbody>
+            </table>
+            
+            <!-- Tabela Mobile -->
+            <div class="mobile-table" id="speakers-mobile-table">
+                <!-- Conteúdo será preenchido via JavaScript -->
             </div>
         </div>
     </div>
     
-    <!-- Cartão do convite que será convertido em imagem -->
-    <div id="invite-card" class="invite-card">
+    <!-- Cartão do convite que será convertido em imagem (Formato A4) -->
+    <div id="invite-card" class="invite-card" style="width: 210mm; min-height: 297mm; padding: 25mm;">
         <div class="invite-header">
             <h2>CONVITE PARA ORADOR</h2>
         </div>
@@ -774,6 +887,7 @@
         // Elementos da aba Arranjo
         const arrangementTableBody = document.getElementById('arrangement-table-body');
         const arrangementTableActions = document.getElementById('arrangement-table-actions');
+        const arrangementMobileTable = document.getElementById('arrangement-mobile-table');
         const exportArrangementImageBtn = document.getElementById('export-arrangement-image');
         const exportArrangementPdfBtn = document.getElementById('export-arrangement-pdf');
         const backupDataBtn = document.getElementById('backup-data');
@@ -807,6 +921,8 @@
         const addSpeechBtn = document.getElementById('add-speech');
         const speakersList = document.getElementById('speakers-list');
         const speakersTableBody = document.getElementById('speakers-table-body');
+        const speakersTableActions = document.getElementById('speakers-table-actions');
+        const speakersMobileTable = document.getElementById('speakers-mobile-table');
         const exportSpeakersImageBtn = document.getElementById('export-speakers-image');
         const exportSpeakersPdfBtn = document.getElementById('export-speakers-pdf');
         
@@ -948,9 +1064,9 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
         // Atualizar prévia quando o botão for clicado
         updatePreviewBtn.addEventListener('click', updatePreview);
         
-        // ========== NOVAS FUNÇÕES SIMPLIFICADAS ==========
+        // ========== FUNÇÕES DE DOWNLOAD ==========
         
-        // Baixar Imagem
+        // Baixar Imagem (Formato A4)
         downloadImageBtn.addEventListener('click', async function() {
             showNotification('Gerando imagem do convite...');
             
@@ -962,7 +1078,9 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                     backgroundColor: '#ffffff',
                     scale: 2,
                     logging: false,
-                    useCORS: true
+                    useCORS: true,
+                    width: 794, // 210mm em pixels (A4)
+                    height: 1123 // 297mm em pixels (A4)
                 });
                 
                 const imageData = canvas.toDataURL('image/png');
@@ -983,7 +1101,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             }
         });
         
-        // Baixar PDF
+        // Baixar PDF (Formato A4)
         downloadPdfBtn.addEventListener('click', function() {
             showNotification('Gerando PDF do convite...');
             
@@ -998,7 +1116,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             const observation = observationInput.value || '[Observação]';
             
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF('p', 'mm', 'a4'); // Formato A4
             
             const pageWidth = pdf.internal.pageSize.getWidth();
             const margin = 20;
@@ -1141,13 +1259,14 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             showNotification('WhatsApp aberto para envio do convite!');
         });
         
-        // ========== FUNÇÕES EXISTENTES DAS OUTRAS ABAS ==========
+        // ========== FUNÇÕES DAS OUTRAS ABAS ==========
         
         // Carregar tabela de arranjos
         function loadArrangementTable() {
             const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
             arrangementTableBody.innerHTML = '';
             arrangementTableActions.innerHTML = '';
+            arrangementMobileTable.innerHTML = '';
             
             if (invites.length === 0) {
                 arrangementTableBody.innerHTML = `
@@ -1164,6 +1283,11 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                         </td>
                     </tr>
                 `;
+                arrangementMobileTable.innerHTML = `
+                    <div class="empty-table">
+                        Nenhum convite enviado ainda
+                    </div>
+                `;
                 return;
             }
             
@@ -1174,7 +1298,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 return dateA.localeCompare(dateB);
             });
             
-            // Preencher tabela visual (4 colunas)
+            // Preencher tabela visual (4 colunas) - Para exportação
             invites.forEach((invite) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1186,7 +1310,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 arrangementTableBody.appendChild(row);
             });
             
-            // Preencher tabela com ações
+            // Preencher tabela desktop com ações
             invites.forEach((invite) => {
                 const row = document.createElement('tr');
                 const sendDate = new Date(invite.sendTimestamp).toLocaleDateString('pt-BR');
@@ -1210,6 +1334,47 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 `;
                 arrangementTableActions.appendChild(row);
             });
+            
+            // Preencher tabela mobile
+            invites.forEach((invite) => {
+                const sendDate = new Date(invite.sendTimestamp).toLocaleDateString('pt-BR');
+                const item = document.createElement('div');
+                item.className = 'mobile-table-item';
+                item.innerHTML = `
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Data do Discurso:</span>
+                        <span class="mobile-table-value">${invite.speechDate}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Congregação:</span>
+                        <span class="mobile-table-value">${invite.destinationCongregation}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Orador:</span>
+                        <span class="mobile-table-value">${invite.suggestedSpeaker}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Tema:</span>
+                        <span class="mobile-table-value">${invite.speechTheme}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Data de Envio:</span>
+                        <span class="mobile-table-value">${sendDate}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Status:</span>
+                        <span class="mobile-table-value"><span class="status-sent">ENVIADO ✓</span></span>
+                    </div>
+                    <div class="table-actions" style="margin-top: 10px;">
+                        <button class="table-btn btn-copy" onclick="copyToClipboard('${invite.inviteUrl}')">Copiar</button>
+                        <button class="table-btn btn-view" onclick="window.open('${invite.inviteUrl}', '_blank')">Ver</button>
+                        <button class="table-btn btn-resend" onclick="resendInvite('${invite.id}')">Reenviar</button>
+                        <button class="table-btn btn-president-table" onclick="sendToPresident('${invite.id}')">Presidente</button>
+                        <button class="table-btn btn-delete" onclick="deleteInvite('${invite.id}')">Excluir</button>
+                    </div>
+                `;
+                arrangementMobileTable.appendChild(item);
+            });
         }
         
         // Converter data para formato ordenável
@@ -1230,97 +1395,14 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             return '9999-12-31';
         }
         
-        // Adicionar orador
-        addSpeakerBtn.addEventListener('click', function() {
-            const name = speakerNameInput.value.trim();
-            const contact = speakerContactInput.value.trim();
-            
-            if (!name) {
-                showNotification('Digite o nome do orador!');
-                return;
-            }
-            
-            const speaker = {
-                id: 'speaker_' + Date.now(),
-                name: name,
-                contact: contact,
-                speeches: []
-            };
-            
-            let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-            speakers.push(speaker);
-            localStorage.setItem('localSpeakers', JSON.stringify(speakers));
-            
-            speakerNameInput.value = '';
-            speakerContactInput.value = '';
-            
-            loadSpeakersList();
-            updateSpeakerSelect();
-            showNotification('Orador adicionado com sucesso!');
-        });
-        
-        // Atualizar seletor de oradores
-        function updateSpeakerSelect() {
-            const speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-            selectSpeaker.innerHTML = '<option value="">Selecione um orador</option>';
-            
-            speakers.forEach(speaker => {
-                const option = document.createElement('option');
-                option.value = speaker.id;
-                option.textContent = speaker.name;
-                selectSpeaker.appendChild(option);
-            });
-        }
-        
-        // Adicionar discurso
-        addSpeechBtn.addEventListener('click', function() {
-            const speakerId = selectSpeaker.value;
-            const title = speechTitleInput.value.trim();
-            const number = speechNumberInput.value.trim();
-            
-            if (!speakerId) {
-                showNotification('Selecione um orador!');
-                return;
-            }
-            
-            if (!title) {
-                showNotification('Digite o título do discurso!');
-                return;
-            }
-            
-            const speech = {
-                id: 'speech_' + Date.now(),
-                title: title,
-                number: number || 'Não informado'
-            };
-            
-            let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-            const speakerIndex = speakers.findIndex(s => s.id === speakerId);
-            
-            if (speakerIndex !== -1) {
-                speakers[speakerIndex].speeches.push(speech);
-                localStorage.setItem('localSpeakers', JSON.stringify(speakers));
-                
-                speechTitleInput.value = '';
-                speechNumberInput.value = '';
-                
-                loadSpeakersList();
-                showNotification('Discurso adicionado com sucesso!');
-            }
-        });
-        
         // Carregar lista de oradores
         function loadSpeakersList() {
             const speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
-            speakersList.innerHTML = '';
             speakersTableBody.innerHTML = '';
+            speakersTableActions.innerHTML = '';
+            speakersMobileTable.innerHTML = '';
             
             if (speakers.length === 0) {
-                speakersList.innerHTML = `
-                    <div class="empty-table">
-                        Nenhum orador cadastrado ainda
-                    </div>
-                `;
                 speakersTableBody.innerHTML = `
                     <tr>
                         <td colspan="3" style="text-align: center; padding: 30px; color: #666;">
@@ -1328,12 +1410,23 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                         </td>
                     </tr>
                 `;
+                speakersTableActions.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty-table">
+                            Nenhum orador cadastrado ainda
+                        </td>
+                    </tr>
+                `;
+                speakersMobileTable.innerHTML = `
+                    <div class="empty-table">
+                        Nenhum orador cadastrado ainda
+                    </div>
+                `;
                 return;
             }
             
-            // Preencher tabela visual (agora com 3 colunas)
+            // Preencher tabela visual (para exportação)
             speakers.forEach(speaker => {
-                // Formatar discursos com cânticos entre parênteses
                 const speechesText = speaker.speeches.map(s => {
                     if (s.number !== 'Não informado') {
                         return `${s.title} (Cântico ${s.number})`;
@@ -1351,72 +1444,62 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 speakersTableBody.appendChild(row);
             });
             
-            // Preencher lista original
+            // Preencher tabela desktop
             speakers.forEach(speaker => {
-                const speakerCard = document.createElement('div');
-                speakerCard.className = 'speaker-card';
+                const speechesText = speaker.speeches.map(s => {
+                    if (s.number !== 'Não informado') {
+                        return `${s.title} (Cântico ${s.number})`;
+                    } else {
+                        return s.title;
+                    }
+                }).join(', ') || 'Nenhum discurso';
                 
-                let speechesHTML = '';
-                if (speaker.speeches.length === 0) {
-                    speechesHTML = '<p>Nenhum discurso cadastrado</p>';
-                } else {
-                    speechesHTML = speaker.speeches.map(speech => {
-                        const canticleText = speech.number !== 'Não informado' ? ` (Cântico ${speech.number})` : '';
-                        return `
-                            <div class="speech-item">
-                                <div class="speech-info">
-                                    <strong>${speech.title}${canticleText}</strong>
-                                </div>
-                                <div class="speech-actions">
-                                    <button class="table-btn btn-delete" onclick="deleteSpeech('${speaker.id}', '${speech.id}')">Excluir</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-                
-                speakerCard.innerHTML = `
-                    <div class="speaker-header">
-                        <div class="speaker-name">${speaker.name}</div>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${speaker.name}</td>
+                    <td>${speaker.contact || 'Não informado'}</td>
+                    <td>${speechesText}</td>
+                    <td>
                         <div class="table-actions">
-                            <button class="table-btn btn-delete" onclick="deleteSpeaker('${speaker.id}')">Excluir Orador</button>
+                            <button class="table-btn btn-delete" onclick="deleteSpeaker('${speaker.id}')">Excluir</button>
                         </div>
+                    </td>
+                `;
+                speakersTableActions.appendChild(row);
+            });
+            
+            // Preencher tabela mobile
+            speakers.forEach(speaker => {
+                const speechesText = speaker.speeches.map(s => {
+                    if (s.number !== 'Não informado') {
+                        return `${s.title} (Cântico ${s.number})`;
+                    } else {
+                        return s.title;
+                    }
+                }).join(', ') || 'Nenhum discurso';
+                
+                const item = document.createElement('div');
+                item.className = 'mobile-table-item';
+                item.innerHTML = `
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Orador:</span>
+                        <span class="mobile-table-value">${speaker.name}</span>
                     </div>
-                    ${speaker.contact ? `<p><strong>Contato:</strong> ${speaker.contact}</p>` : ''}
-                    <div class="speeches-container">
-                        <h4>Discursos Disponíveis:</h4>
-                        ${speechesHTML}
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Contato:</span>
+                        <span class="mobile-table-value">${speaker.contact || 'Não informado'}</span>
+                    </div>
+                    <div class="mobile-table-row">
+                        <span class="mobile-table-label">Discursos:</span>
+                        <span class="mobile-table-value">${speechesText}</span>
+                    </div>
+                    <div class="table-actions" style="margin-top: 10px;">
+                        <button class="table-btn btn-delete" onclick="deleteSpeaker('${speaker.id}')">Excluir Orador</button>
                     </div>
                 `;
-                
-                speakersList.appendChild(speakerCard);
+                speakersMobileTable.appendChild(item);
             });
         }
-        
-        // Fazer backup
-        backupDataBtn.addEventListener('click', function() {
-            const backupData = {
-                invitesHistory: JSON.parse(localStorage.getItem('invitesHistory') || '[]'),
-                localSpeakers: JSON.parse(localStorage.getItem('localSpeakers') || '[]'),
-                config: {
-                    congregation: localStorage.getItem('congregation'),
-                    meetingTime: localStorage.getItem('meetingTime'),
-                    address: localStorage.getItem('address'),
-                    contact: localStorage.getItem('contact')
-                },
-                timestamp: new Date().toISOString()
-            };
-            
-            const dataStr = JSON.stringify(backupData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `backup_sistema_oradores_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('Backup completo criado com sucesso!');
-        });
         
         // ========== FUNÇÕES GLOBAIS ==========
         
