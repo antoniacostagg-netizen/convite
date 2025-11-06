@@ -654,6 +654,7 @@
                 <div class="actions">
                     <button class="btn" id="create-invite-link">Criar Link do Convite</button>
                     <button class="btn btn-whatsapp" id="send-invite-whatsapp">Enviar pelo WhatsApp</button>
+                    <button class="btn btn-google" id="create-word-doc">Criar Documento Word</button>
                 </div>
                 <div class="link-display" id="invite-link-display">
                     <!-- Link do convite será exibido aqui -->
@@ -716,7 +717,6 @@
                             <th>Orador</th>
                             <th>Contato</th>
                             <th>Discursos Disponíveis</th>
-                            <th>Cânticos</th>
                         </tr>
                     </thead>
                     <tbody id="speakers-table-body">
@@ -779,6 +779,7 @@
         const generatePdfBtn = document.getElementById('generate-pdf');
         const createInviteLinkBtn = document.getElementById('create-invite-link');
         const sendInviteWhatsappBtn = document.getElementById('send-invite-whatsapp');
+        const createWordDocBtn = document.getElementById('create-word-doc');
         const inviteLinkDisplay = document.getElementById('invite-link-display');
         const previewContent = document.getElementById('preview-content');
         const inviteBody = document.getElementById('invite-body');
@@ -1047,7 +1048,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             showNotification('PDF gerado com sucesso!');
         });
         
-        // Criar Link do Convite - MÉTODO MELHORADO
+        // Criar Link do Convite - MÉTODO CORRIGIDO
         createInviteLinkBtn.addEventListener('click', async function() {
             showNotification('Gerando link do convite...');
             
@@ -1077,10 +1078,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 // Salvar a imagem no localStorage com ID curto
                 localStorage.setItem(`invite_${inviteId}`, imgData);
                 
-                // Criar página secundária HTML
-                const invitePageHtml = createInvitePageHtml(inviteId, imgData);
-                
-                // Criar URL para a página secundária
+                // Criar URL curta
                 const currentUrl = window.location.href.split('?')[0];
                 const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
                 
@@ -1095,7 +1093,6 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                     </div>
                     <button class="btn" onclick="copyToClipboard('${inviteUrl}')">Copiar Link</button>
                     <button class="btn" onclick="testInviteLink('${inviteUrl}')">Testar Link</button>
-                    <button class="btn" onclick="downloadInvitePage('${inviteId}', '${invitePageHtml}')">Baixar Página</button>
                 `;
                 
                 showNotification('Link do convite criado! Compartilhe com a congregação.');
@@ -1107,8 +1104,13 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             }
         });
         
-        // Criar HTML da página secundária do convite
-        function createInvitePageHtml(inviteId, imgData) {
+        // Criar Documento Word Online
+        createWordDocBtn.addEventListener('click', function() {
+            showNotification('Gerando documento Word...');
+            
+            // Primeiro atualiza o template
+            updatePreview();
+            
             const congregation = congregationInput.value || '[Nome da Congregação]';
             const meetingTime = meetingTimeInput.value || '[Horário da Reunião]';
             const address = addressInput.value || '[Endereço da Congregação]';
@@ -1117,193 +1119,78 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             const destinationCongregation = destinationCongregationInput.value || '[Congregação Destinatária]';
             const speechTheme = speechThemeInput.value || '[Tema do Discurso]';
             const speechDate = speechDateInput.value || '[Data Sugerida]';
+            const observation = observationInput.value || '[Observação]';
             
-            return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convite para Orador</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .invite-container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            max-width: 100%;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .invite-title {
-            color: #1565c0;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #bbdefb;
-            padding-bottom: 10px;
-        }
-        
-        .invite-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 5px;
-            border: 2px solid #1976d2;
-            margin: 15px 0;
-        }
-        
-        .invite-details {
-            text-align: left;
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8fbff;
-            border-radius: 5px;
-            border-left: 4px solid #1976d2;
-        }
-        
-        .invite-details h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
-        }
-        
-        .invite-details ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        
-        .invite-details li {
-            margin-bottom: 8px;
-            padding-left: 15px;
-            position: relative;
-        }
-        
-        .invite-details li:before {
-            content: "•";
-            color: #1976d2;
-            font-weight: bold;
-            position: absolute;
-            left: 0;
-        }
-        
-        .actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
-        .btn {
-            display: inline-block;
-            background: linear-gradient(to right, #1976d2, #42a5f5);
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-decoration: none;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        .btn-download {
-            background: linear-gradient(to right, #2e7d32, #4caf50);
-        }
-        
-        .btn-print {
-            background: linear-gradient(to right, #666, #888);
-        }
-        
-        .btn-close {
-            background: linear-gradient(to right, #d32f2f, #f44336);
-        }
-        
-        @media (max-width: 768px) {
-            .invite-container {
-                padding: 20px;
-            }
+            // Criar conteúdo HTML para o documento
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Convite para Orador</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 40px; }
+                        h1 { color: #1565c0; text-align: center; }
+                        h2 { color: #1976d2; border-bottom: 1px solid #bbdefb; padding-bottom: 10px; }
+                        .scripture { font-style: italic; margin: 15px 0; padding: 10px; background-color: #f1f8ff; border-left: 3px solid #1976d2; }
+                        ul { margin: 15px 0; }
+                        li { margin-bottom: 8px; }
+                        .footer { margin-top: 30px; font-style: italic; text-align: center; color: #546e7a; border-top: 1px solid #e3f2fd; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>CONVITE PARA ORADOR</h1>
+                    
+                    <p>Prezados irmãos da congregação <strong>${destinationCongregation}</strong>,</p>
+                    
+                    <p class="scripture">"E pensemos uns nos outros para nos estimular ao amor e às boas obras, não deixando de nos reunir, como é costume de alguns, mas nos encorajando uns aos outros, e ainda mais ao passo que vocês veem chegar o dia." - Hebreus 10:24,25</p>
+                    
+                    <p>Precisamos nos estimular ao amor e às boas obras. Por isso, as boas companhias de nossos irmãos são muito importantes. Sendo assim, gostaríamos de convidar um dos oradores da sua congregação para proferir um discurso público aqui na nossa congregação.</p>
+                    
+                    <h2>INFORMAÇÕES:</h2>
+                    <ul>
+                        <li><strong>Congregação:</strong> ${congregation}</li>
+                        <li><strong>Horário da Reunião:</strong> ${meetingTime}</li>
+                        <li><strong>Endereço:</strong> ${address}</li>
+                        <li><strong>Contato:</strong> ${contact}</li>
+                    </ul>
+                    
+                    <h2>DETALHES DO DISCURSO:</h2>
+                    <ul>
+                        <li><strong>Orador Sugerido:</strong> ${suggestedSpeaker}</li>
+                        <li><strong>Tema:</strong> ${speechTheme}</li>
+                        <li><strong>Data Sugerida:</strong> ${speechDate}</li>
+                    </ul>
+                    
+                    ${observation && observation !== '[Observação]' ? `<p><strong>Observação:</strong> ${observation}</p>` : ''}
+                    
+                    <div class="footer">
+                        <p>Agradecemos muito a colaboração para os arranjos da obra e arranjos teocráticos.</p>
+                        <p class="scripture">"E vejam se não abrirei para vocês as comportas dos céus e se não derramarei sobre vocês uma bênção até que não falte mais nada". - Malaquias 3:10</p>
+                    </div>
+                </body>
+                </html>
+            `;
             
-            .actions {
-                flex-direction: column;
-            }
+            // Codificar o conteúdo HTML para URL
+            const encodedHtml = encodeURIComponent(htmlContent);
             
-            .btn {
-                width: 100%;
-                margin: 5px 0;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="invite-container">
-        <h1 class="invite-title">CONVITE PARA ORADOR</h1>
-        
-        <img src="${imgData}" alt="Convite para Orador" class="invite-image">
-        
-        <div class="invite-details">
-            <h3>Detalhes do Convite:</h3>
-            <ul>
-                <li><strong>Congregação:</strong> ${congregation}</li>
-                <li><strong>Horário da Reunião:</strong> ${meetingTime}</li>
-                <li><strong>Endereço:</strong> ${address}</li>
-                <li><strong>Contato:</strong> ${contact}</li>
-                <li><strong>Orador Sugerido:</strong> ${suggestedSpeaker}</li>
-                <li><strong>Tema:</strong> ${speechTheme}</li>
-                <li><strong>Data Sugerida:</strong> ${speechDate}</li>
-            </ul>
-        </div>
-    </div>
-    
-    <div class="actions">
-        <button class="btn btn-download" onclick="downloadInviteImage()">📥 Baixar Imagem</button>
-        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir</button>
-        <button class="btn btn-close" onclick="window.close()">Fechar</button>
-    </div>
-
-    <script>
-        function downloadInviteImage() {
-            const link = document.createElement('a');
-            link.download = 'convite_orador_${inviteId}.jpg';
-            link.href = '${imgData}';
-            link.click();
-        }
-        
-        // Se a página for aberta em um dispositivo móvel, ajustar o zoom
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(function() {
-                    window.scrollTo(0, 1);
-                }, 1000);
-            });
-        }
-    </script>
-</body>
-</html>`;
-        }
+            // Criar URL para o Word Online
+            const wordUrl = `https://view.officeapps.live.com/op/embed.aspx?src=data:text/html;charset=utf-8,${encodedHtml}`;
+            
+            // Exibir o link
+            inviteLinkDisplay.style.display = 'block';
+            inviteLinkDisplay.innerHTML = `
+                <strong>📝 Documento Word Online:</strong><br>
+                <a href="${wordUrl}" target="_blank" class="short-url">${wordUrl}</a>
+                <br><br>
+                <p><em>Este link abre o convite em formato editável no Word Online.</em></p>
+                <button class="btn" onclick="copyToClipboard('${wordUrl}')">Copiar Link</button>
+                <button class="btn" onclick="testInviteLink('${wordUrl}')">Abrir Documento</button>
+            `;
+            
+            showNotification('Documento Word criado! Compartilhe o link.');
+        });
         
         // Enviar Convite pelo WhatsApp
         sendInviteWhatsappBtn.addEventListener('click', async function() {
@@ -1335,7 +1222,7 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 // Salvar a imagem no localStorage com ID curto
                 localStorage.setItem(`invite_${inviteId}`, imgData);
                 
-                // Criar URL para a página secundária
+                // Criar URL curta
                 const currentUrl = window.location.href.split('?')[0];
                 const inviteUrl = `${currentUrl}?view=invite&id=${inviteId}`;
                 
@@ -1676,7 +1563,7 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                 `;
                 speakersTableBody.innerHTML = `
                     <tr>
-                        <td colspan="4" style="text-align: center; padding: 30px; color: #666;">
+                        <td colspan="3" style="text-align: center; padding: 30px; color: #666;">
                             Nenhum orador cadastrado ainda
                         </td>
                     </tr>
@@ -1684,17 +1571,22 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                 return;
             }
             
-            // Preencher tabela visual
+            // Preencher tabela visual (agora com 3 colunas)
             speakers.forEach(speaker => {
-                const speechesText = speaker.speeches.map(s => s.title).join(', ') || 'Nenhum discurso';
-                const canticlesText = speaker.speeches.map(s => s.number !== 'Não informado' ? s.number : '').filter(Boolean).join(', ') || 'Não informado';
+                // Formatar discursos com cânticos entre parênteses
+                const speechesText = speaker.speeches.map(s => {
+                    if (s.number !== 'Não informado') {
+                        return `${s.title} (Cântico ${s.number})`;
+                    } else {
+                        return s.title;
+                    }
+                }).join(', ') || 'Nenhum discurso';
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${speaker.name}</td>
                     <td>${speaker.contact || 'Não informado'}</td>
                     <td>${speechesText}</td>
-                    <td>${canticlesText}</td>
                 `;
                 speakersTableBody.appendChild(row);
             });
@@ -1708,17 +1600,19 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                 if (speaker.speeches.length === 0) {
                     speechesHTML = '<p>Nenhum discurso cadastrado</p>';
                 } else {
-                    speechesHTML = speaker.speeches.map(speech => `
-                        <div class="speech-item">
-                            <div class="speech-info">
-                                <strong>${speech.title}</strong>
-                                ${speech.number !== 'Não informado' ? `<br><small>Cântico: ${speech.number}</small>` : ''}
+                    speechesHTML = speaker.speeches.map(speech => {
+                        const canticleText = speech.number !== 'Não informado' ? ` (Cântico ${speech.number})` : '';
+                        return `
+                            <div class="speech-item">
+                                <div class="speech-info">
+                                    <strong>${speech.title}${canticleText}</strong>
+                                </div>
+                                <div class="speech-actions">
+                                    <button class="table-btn btn-delete" onclick="deleteSpeech('${speaker.id}', '${speech.id}')">Excluir</button>
+                                </div>
                             </div>
-                            <div class="speech-actions">
-                                <button class="table-btn btn-delete" onclick="deleteSpeech('${speaker.id}', '${speech.id}')">Excluir</button>
-                            </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 }
                 
                 speakerCard.innerHTML = `
@@ -1892,17 +1786,6 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             window.open(url, '_blank');
         };
         
-        window.downloadInvitePage = function(inviteId, htmlContent) {
-            const blob = new Blob([htmlContent], {type: 'text/html'});
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `convite_orador_${inviteId}.html`;
-            link.click();
-            URL.revokeObjectURL(url);
-            showNotification('Página do convite baixada!');
-        };
-        
         // Verificar se deve mostrar um convite específico
         function checkForInviteView() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1919,47 +1802,20 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
             const savedImage = localStorage.getItem(`invite_${inviteId}`);
             
             if (savedImage) {
-                const congregation = localStorage.getItem('congregation') || '[Nome da Congregação]';
-                const meetingTime = localStorage.getItem('meetingTime') || '[Horário da Reunião]';
-                const address = localStorage.getItem('address') || '[Endereço da Congregação]';
-                const contact = localStorage.getItem('contact') || '[Contato para Confirmação]';
-                
-                // Buscar dados específicos do convite no histórico
-                const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
-                const invite = invites.find(inv => inv.inviteUrl && inv.inviteUrl.includes(inviteId));
-                
-                const suggestedSpeaker = invite ? invite.suggestedSpeaker : '[Orador Sugerido]';
-                const speechTheme = invite ? invite.speechTheme : '[Tema do Discurso]';
-                const speechDate = invite ? invite.speechDate : '[Data Sugerida]';
-                
                 document.body.innerHTML = `
                     <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #f5f5f5;">
-                        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 100%; text-align: center; margin-bottom: 20px;">
-                            <h1 style="color: #1565c0; margin-bottom: 20px; border-bottom: 2px solid #bbdefb; padding-bottom: 10px;">CONVITE PARA ORADOR</h1>
-                            <img src="${savedImage}" alt="Convite para Orador" style="max-width: 100%; height: auto; border-radius: 5px; border: 2px solid #1976d2; margin: 15px 0;">
-                            
-                            <div style="text-align: left; margin-top: 20px; padding: 15px; background: #f8fbff; border-radius: 5px; border-left: 4px solid #1976d2;">
-                                <h3 style="color: #1976d2; margin-bottom: 10px;">Detalhes do Convite:</h3>
-                                <ul style="list-style-type: none; padding-left: 0;">
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Congregação:</strong> ${congregation}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Horário da Reunião:</strong> ${meetingTime}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Endereço:</strong> ${address}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Contato:</strong> ${contact}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Orador Sugerido:</strong> ${suggestedSpeaker}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Tema:</strong> ${speechTheme}</li>
-                                    <li style="margin-bottom: 8px; padding-left: 15px; position: relative;"><strong>Data Sugerida:</strong> ${speechDate}</li>
-                                </ul>
-                            </div>
+                        <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 100%; text-align: center;">
+                            <h2 style="color: #1565c0; margin-bottom: 15px;">Convite para Orador</h2>
+                            <img src="${savedImage}" alt="Convite para Orador" style="max-width: 100%; height: auto; border-radius: 5px; border: 2px solid #1976d2;">
                         </div>
-                        
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                            <button onclick="downloadInviteImage('${savedImage}')" style="padding: 12px 20px; background: linear-gradient(to right, #2e7d32, #4caf50); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="downloadInviteImage('${savedImage}')" style="padding: 10px 20px; background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer;">
                                 📥 Baixar Imagem
                             </button>
-                            <button onclick="window.print()" style="padding: 12px 20px; background: linear-gradient(to right, #666, #888); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            <button onclick="window.print()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">
                                 🖨️ Imprimir
                             </button>
-                            <button onclick="window.close()" style="padding: 12px 20px; background: linear-gradient(to right, #d32f2f, #f44336); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            <button onclick="window.close()" style="padding: 10px 20px; background: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer;">
                                 Fechar
                             </button>
                         </div>
