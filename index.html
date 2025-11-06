@@ -221,11 +221,13 @@
         }
         
         .invite-card {
-            display: none;
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
             background-color: white;
             padding: 40px;
-            max-width: 600px;
-            margin: 20px auto;
+            width: 210mm;
+            min-height: 297mm;
             border: 2px solid #1976d2;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -862,7 +864,7 @@
     </div>
     
     <!-- Cartão do convite que será convertido em imagem (Formato A4) -->
-    <div id="invite-card" class="invite-card" style="width: 210mm; min-height: 297mm; padding: 25mm;">
+    <div id="invite-card" class="invite-card">
         <div class="invite-header">
             <h2>CONVITE PARA ORADOR</h2>
         </div>
@@ -919,7 +921,6 @@
         const speechNumberInput = document.getElementById('speech-number');
         const addSpeakerBtn = document.getElementById('add-speaker');
         const addSpeechBtn = document.getElementById('add-speech');
-        const speakersList = document.getElementById('speakers-list');
         const speakersTableBody = document.getElementById('speakers-table-body');
         const speakersTableActions = document.getElementById('speakers-table-actions');
         const speakersMobileTable = document.getElementById('speakers-mobile-table');
@@ -1066,21 +1067,26 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
         
         // ========== FUNÇÕES DE DOWNLOAD ==========
         
-        // Baixar Imagem (Formato A4)
+        // Baixar Imagem (Formato A4) - CORRIGIDO
         downloadImageBtn.addEventListener('click', async function() {
             showNotification('Gerando imagem do convite...');
             
-            const inviteCard = document.getElementById('invite-card');
-            inviteCard.style.display = 'block';
-            
             try {
+                // Atualizar o preview primeiro para garantir que o conteúdo está atualizado
+                updatePreview();
+                
+                // Usar html2canvas diretamente no cartão do convite
+                const inviteCard = document.getElementById('invite-card');
+                
                 const canvas = await html2canvas(inviteCard, {
                     backgroundColor: '#ffffff',
                     scale: 2,
                     logging: false,
                     useCORS: true,
-                    width: 794, // 210mm em pixels (A4)
-                    height: 1123 // 297mm em pixels (A4)
+                    width: 794, // A4 width in pixels at 96 DPI
+                    height: 1123, // A4 height in pixels at 96 DPI
+                    scrollX: 0,
+                    scrollY: 0
                 });
                 
                 const imageData = canvas.toDataURL('image/png');
@@ -1096,8 +1102,6 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             } catch (error) {
                 console.error('Erro ao gerar imagem:', error);
                 showNotification('Erro ao gerar imagem. Tente novamente.');
-            } finally {
-                inviteCard.style.display = 'none';
             }
         });
         
@@ -1214,7 +1218,33 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             
             pdf.save('Convite_Orador.pdf');
             showNotification('PDF baixado com sucesso!');
+            
+            // Salvar no histórico
+            saveInviteToHistory();
         });
+        
+        // Salvar convite no histórico
+        function saveInviteToHistory() {
+            const inviteData = {
+                id: 'invite_' + Date.now(),
+                congregation: congregationInput.value || '[Nome da Congregação]',
+                meetingTime: meetingTimeInput.value || '[Horário da Reunião]',
+                address: addressInput.value || '[Endereço da Congregação]',
+                contact: contactInput.value || '[Contato para Confirmação]',
+                suggestedSpeaker: suggestedSpeakerInput.value || '[Orador Sugerido]',
+                destinationCongregation: destinationCongregationInput.value || '[Congregação Destinatária]',
+                speechTheme: speechThemeInput.value || '[Tema do Discurso]',
+                speechDate: speechDateInput.value || '[Data Sugerida]',
+                observation: observationInput.value || '[Observação]',
+                sendTimestamp: Date.now()
+            };
+            
+            let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            invites.push(inviteData);
+            localStorage.setItem('invitesHistory', JSON.stringify(invites));
+            
+            loadArrangementTable();
+        }
         
         // Enviar Texto pelo WhatsApp
         sendWhatsappBtn.addEventListener('click', function() {
@@ -1257,6 +1287,163 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             window.open(whatsappUrl, '_blank');
             
             showNotification('WhatsApp aberto para envio do convite!');
+            
+            // Salvar no histórico
+            saveInviteToHistory();
+        });
+        
+        // ========== FUNÇÕES DE EXPORTAÇÃO ==========
+        
+        // Exportar Arranjo como Imagem
+        exportArrangementImageBtn.addEventListener('click', async function() {
+            showNotification('Exportando arranjo como imagem...');
+            
+            // Primeiro garantir que a tabela visual está atualizada
+            loadArrangementTable();
+            
+            // Mostrar a tabela visual temporariamente
+            const tableElement = document.getElementById('arrangement-table-visual');
+            tableElement.style.display = 'block';
+            
+            try {
+                const canvas = await html2canvas(tableElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const imageData = canvas.toDataURL('image/png');
+                
+                // Criar link para download
+                const link = document.createElement('a');
+                link.download = `discursos_programados_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = imageData;
+                link.click();
+                
+                showNotification('Arranjo exportado como imagem!');
+                
+            } catch (error) {
+                console.error('Erro ao exportar imagem:', error);
+                showNotification('Erro ao exportar imagem. Tente novamente.');
+            } finally {
+                // Esconder a tabela visual novamente
+                tableElement.style.display = 'none';
+            }
+        });
+        
+        // Exportar Arranjo como PDF
+        exportArrangementPdfBtn.addEventListener('click', async function() {
+            showNotification('Exportando arranjo como PDF...');
+            
+            // Primeiro garantir que a tabela visual está atualizada
+            loadArrangementTable();
+            
+            // Mostrar a tabela visual temporariamente
+            const tableElement = document.getElementById('arrangement-table-visual');
+            tableElement.style.display = 'block';
+            
+            try {
+                const canvas = await html2canvas(tableElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/png');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`discursos_programados_${new Date().toISOString().split('T')[0]}.pdf`);
+                showNotification('Arranjo exportado como PDF!');
+                
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                showNotification('Erro ao exportar PDF. Tente novamente.');
+            } finally {
+                // Esconder a tabela visual novamente
+                tableElement.style.display = 'none';
+            }
+        });
+        
+        // Exportar Oradores como Imagem
+        exportSpeakersImageBtn.addEventListener('click', async function() {
+            showNotification('Exportando lista de oradores como imagem...');
+            
+            // Primeiro garantir que a tabela visual está atualizada
+            loadSpeakersList();
+            
+            // Mostrar a tabela visual temporariamente
+            const tableElement = document.getElementById('speakers-table-visual');
+            tableElement.style.display = 'block';
+            
+            try {
+                const canvas = await html2canvas(tableElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const imageData = canvas.toDataURL('image/png');
+                
+                // Criar link para download
+                const link = document.createElement('a');
+                link.download = `lista_oradores_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = imageData;
+                link.click();
+                
+                showNotification('Lista de oradores exportada como imagem!');
+                
+            } catch (error) {
+                console.error('Erro ao exportar imagem:', error);
+                showNotification('Erro ao exportar imagem. Tente novamente.');
+            } finally {
+                // Esconder a tabela visual novamente
+                tableElement.style.display = 'none';
+            }
+        });
+        
+        // Exportar Oradores como PDF
+        exportSpeakersPdfBtn.addEventListener('click', async function() {
+            showNotification('Exportando lista de oradores como PDF...');
+            
+            // Primeiro garantir que a tabela visual está atualizada
+            loadSpeakersList();
+            
+            // Mostrar a tabela visual temporariamente
+            const tableElement = document.getElementById('speakers-table-visual');
+            tableElement.style.display = 'block';
+            
+            try {
+                const canvas = await html2canvas(tableElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/png');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`lista_oradores_${new Date().toISOString().split('T')[0]}.pdf`);
+                showNotification('Lista de oradores exportada como PDF!');
+                
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                showNotification('Erro ao exportar PDF. Tente novamente.');
+            } finally {
+                // Esconder a tabela visual novamente
+                tableElement.style.display = 'none';
+            }
         });
         
         // ========== FUNÇÕES DAS OUTRAS ABAS ==========
@@ -1324,8 +1511,6 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                     <td><span class="status-sent">ENVIADO ✓</span></td>
                     <td>
                         <div class="table-actions">
-                            <button class="table-btn btn-copy" onclick="copyToClipboard('${invite.inviteUrl}')">Copiar</button>
-                            <button class="table-btn btn-view" onclick="window.open('${invite.inviteUrl}', '_blank')">Ver</button>
                             <button class="table-btn btn-resend" onclick="resendInvite('${invite.id}')">Reenviar</button>
                             <button class="table-btn btn-president-table" onclick="sendToPresident('${invite.id}')">Presidente</button>
                             <button class="table-btn btn-delete" onclick="deleteInvite('${invite.id}')">Excluir</button>
@@ -1366,8 +1551,6 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                         <span class="mobile-table-value"><span class="status-sent">ENVIADO ✓</span></span>
                     </div>
                     <div class="table-actions" style="margin-top: 10px;">
-                        <button class="table-btn btn-copy" onclick="copyToClipboard('${invite.inviteUrl}')">Copiar</button>
-                        <button class="table-btn btn-view" onclick="window.open('${invite.inviteUrl}', '_blank')">Ver</button>
                         <button class="table-btn btn-resend" onclick="resendInvite('${invite.id}')">Reenviar</button>
                         <button class="table-btn btn-president-table" onclick="sendToPresident('${invite.id}')">Presidente</button>
                         <button class="table-btn btn-delete" onclick="deleteInvite('${invite.id}')">Excluir</button>
@@ -1394,6 +1577,85 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
             }
             return '9999-12-31';
         }
+        
+        // Adicionar orador
+        addSpeakerBtn.addEventListener('click', function() {
+            const name = speakerNameInput.value.trim();
+            const contact = speakerContactInput.value.trim();
+            
+            if (!name) {
+                showNotification('Digite o nome do orador!');
+                return;
+            }
+            
+            const speaker = {
+                id: 'speaker_' + Date.now(),
+                name: name,
+                contact: contact,
+                speeches: []
+            };
+            
+            let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
+            speakers.push(speaker);
+            localStorage.setItem('localSpeakers', JSON.stringify(speakers));
+            
+            speakerNameInput.value = '';
+            speakerContactInput.value = '';
+            
+            loadSpeakersList();
+            updateSpeakerSelect();
+            showNotification('Orador adicionado com sucesso!');
+        });
+        
+        // Atualizar seletor de oradores
+        function updateSpeakerSelect() {
+            const speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
+            selectSpeaker.innerHTML = '<option value="">Selecione um orador</option>';
+            
+            speakers.forEach(speaker => {
+                const option = document.createElement('option');
+                option.value = speaker.id;
+                option.textContent = speaker.name;
+                selectSpeaker.appendChild(option);
+            });
+        }
+        
+        // Adicionar discurso
+        addSpeechBtn.addEventListener('click', function() {
+            const speakerId = selectSpeaker.value;
+            const title = speechTitleInput.value.trim();
+            const number = speechNumberInput.value.trim();
+            
+            if (!speakerId) {
+                showNotification('Selecione um orador!');
+                return;
+            }
+            
+            if (!title) {
+                showNotification('Digite o título do discurso!');
+                return;
+            }
+            
+            const speech = {
+                id: 'speech_' + Date.now(),
+                title: title,
+                number: number || 'Não informado'
+            };
+            
+            let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
+            const speakerIndex = speakers.findIndex(s => s.id === speakerId);
+            
+            if (speakerIndex !== -1) {
+                speakers[speakerIndex].speeches.push(speech);
+                localStorage.setItem('localSpeakers', JSON.stringify(speakers));
+                
+                speechTitleInput.value = '';
+                speechNumberInput.value = '';
+                
+                loadSpeakersList();
+                showNotification('Discurso adicionado com sucesso!');
+            }
+        });
         
         // Carregar lista de oradores
         function loadSpeakersList() {
@@ -1500,6 +1762,174 @@ Agradecemos muito a colaboração para os arranjos da obra e arranjos teocrátic
                 speakersMobileTable.appendChild(item);
             });
         }
+        
+        // Funções para manipulação de oradores
+        window.deleteSpeaker = function(speakerId) {
+            if (confirm('Deseja excluir este orador e todos os seus discursos?')) {
+                let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
+                speakers = speakers.filter(s => s.id !== speakerId);
+                localStorage.setItem('localSpeakers', JSON.stringify(speakers));
+                loadSpeakersList();
+                updateSpeakerSelect();
+                showNotification('Orador excluído com sucesso!');
+            }
+        };
+        
+        window.deleteSpeech = function(speakerId, speechId) {
+            if (confirm('Deseja excluir este discurso?')) {
+                let speakers = JSON.parse(localStorage.getItem('localSpeakers') || '[]');
+                const speakerIndex = speakers.findIndex(s => s.id === speakerId);
+                
+                if (speakerIndex !== -1) {
+                    speakers[speakerIndex].speeches = speakers[speakerIndex].speeches.filter(s => s.id !== speechId);
+                    localStorage.setItem('localSpeakers', JSON.stringify(speakers));
+                    loadSpeakersList();
+                    showNotification('Discurso excluído com sucesso!');
+                }
+            }
+        };
+        
+        // Funções para manipulação de convites
+        window.resendInvite = function(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
+            
+            if (invite) {
+                const suggestedSpeaker = invite.suggestedSpeaker || '[Orador Sugerido]';
+                const speechTheme = invite.speechTheme || '[Tema do Discurso]';
+                const speechDate = invite.speechDate || '[Data Sugerida]';
+                const congregation = invite.congregation || '[Nome da Congregação]';
+                
+                const message = `🎤 *REENVIO - CONVITE PARA ORADOR*
+
+Prezados irmãos,
+
+Estamos reenviando o convite para *${suggestedSpeaker}* proferir o discurso:
+*"${speechTheme}"*
+
+📅 *Data Sugerida:* ${speechDate}
+📍 *Congregação:* ${congregation}
+
+Agradecemos antecipadamente pela atenção e colaboração.
+
+Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
+                
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification('WhatsApp aberto para reenvio!');
+            }
+        };
+        
+        window.sendToPresident = function(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
+            
+            if (invite) {
+                const suggestedSpeaker = invite.suggestedSpeaker || '[Orador Sugerido]';
+                const speechTheme = invite.speechTheme || '[Tema do Discurso]';
+                const speechDate = invite.speechDate || '[Data Sugerida]';
+                const destinationCongregation = invite.destinationCongregation || '[Congregação Destinatária]';
+                
+                const message = `📋 *INFORMAÇÃO PARA O PRESIDENTE*
+
+Prezado Presidente,
+
+Segue informação sobre discurso programado:
+
+🗓️ *Data:* ${speechDate}
+👤 *Orador:* ${suggestedSpeaker}
+📖 *Tema:* ${speechTheme}
+📍 *Congregação:* ${destinationCongregation}
+
+*Informação enviada pelo Sistema de Oradores*`;
+                
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification('WhatsApp aberto para enviar ao presidente!');
+            }
+        };
+        
+        window.deleteInvite = function(inviteId) {
+            if (confirm('Deseja excluir este convite do histórico?')) {
+                let invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+                invites = invites.filter(inv => inv.id !== inviteId);
+                localStorage.setItem('invitesHistory', JSON.stringify(invites));
+                loadArrangementTable();
+                showNotification('Convite excluído com sucesso!');
+            }
+        };
+        
+        // Fazer backup
+        backupDataBtn.addEventListener('click', function() {
+            const backupData = {
+                invitesHistory: JSON.parse(localStorage.getItem('invitesHistory') || '[]'),
+                localSpeakers: JSON.parse(localStorage.getItem('localSpeakers') || '[]'),
+                config: {
+                    congregation: localStorage.getItem('congregation'),
+                    meetingTime: localStorage.getItem('meetingTime'),
+                    address: localStorage.getItem('address'),
+                    contact: localStorage.getItem('contact')
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `backup_sistema_oradores_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Backup completo criado com sucesso!');
+        });
+        
+        // Restaurar backup
+        restoreDataBtn.addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const backupData = JSON.parse(event.target.result);
+                        
+                        // Restaurar dados
+                        if (backupData.invitesHistory) {
+                            localStorage.setItem('invitesHistory', JSON.stringify(backupData.invitesHistory));
+                        }
+                        
+                        if (backupData.localSpeakers) {
+                            localStorage.setItem('localSpeakers', JSON.stringify(backupData.localSpeakers));
+                        }
+                        
+                        if (backupData.config) {
+                            if (backupData.config.congregation) localStorage.setItem('congregation', backupData.config.congregation);
+                            if (backupData.config.meetingTime) localStorage.setItem('meetingTime', backupData.config.meetingTime);
+                            if (backupData.config.address) localStorage.setItem('address', backupData.config.address);
+                            if (backupData.config.contact) localStorage.setItem('contact', backupData.config.contact);
+                        }
+                        
+                        loadSavedConfig();
+                        showNotification('Backup restaurado com sucesso!');
+                    } catch (error) {
+                        showNotification('Erro ao restaurar backup: arquivo inválido');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        });
         
         // ========== FUNÇÕES GLOBAIS ==========
         
