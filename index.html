@@ -173,6 +173,10 @@
             background: linear-gradient(to right, #d32f2f, #f44336);
         }
         
+        .btn-president {
+            background: linear-gradient(to right, #7B1FA2, #9C27B0);
+        }
+        
         .save-config {
             background: linear-gradient(to right, #2e7d32, #4caf50);
         }
@@ -324,6 +328,11 @@
         
         .btn-delete {
             background-color: #f44336;
+            color: white;
+        }
+        
+        .btn-president-table {
+            background-color: #7B1FA2;
             color: white;
         }
         
@@ -1351,6 +1360,7 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                             <button class="table-btn btn-copy" onclick="copyToClipboard('${invite.inviteUrl}')">Copiar</button>
                             <button class="table-btn btn-view" onclick="window.open('${invite.inviteUrl}', '_blank')">Ver</button>
                             <button class="table-btn btn-resend" onclick="resendInvite('${invite.id}')">Reenviar</button>
+                            <button class="table-btn btn-president-table" onclick="sendToPresident('${invite.id}')">Presidente</button>
                             <button class="table-btn btn-delete" onclick="deleteInvite('${invite.id}')">Excluir</button>
                         </div>
                     </td>
@@ -1410,6 +1420,38 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                 window.open(whatsappUrl, '_blank');
                 
                 showNotification('WhatsApp aberto para reenvio!');
+            }
+        }
+        
+        // Enviar para Presidente
+        function sendToPresident(inviteId) {
+            const invites = JSON.parse(localStorage.getItem('invitesHistory') || '[]');
+            const invite = invites.find(inv => inv.id === inviteId);
+            
+            if (invite) {
+                const suggestedSpeaker = invite.suggestedSpeaker || '[Orador Sugerido]';
+                const speechTheme = invite.speechTheme || '[Tema do Discurso]';
+                const speechDate = invite.speechDate || '[Data Sugerida]';
+                const destinationCongregation = invite.destinationCongregation || '[Congregação Destinatária]';
+                
+                const message = `📋 *INFORMAÇÃO PARA O PRESIDENTE*
+
+Prezado Presidente,
+
+Segue informação sobre discurso programado:
+
+🗓️ *Data:* ${speechDate}
+👤 *Orador:* ${suggestedSpeaker}
+📖 *Tema:* ${speechTheme}
+📍 *Congregação:* ${destinationCongregation}
+
+*Informação enviada pelo Sistema de Oradores*`;
+                
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+                
+                showNotification('WhatsApp aberto para enviar ao presidente!');
             }
         }
         
@@ -1676,7 +1718,7 @@ Que Jeová continue abençoando nossos esforços em prol do Reino. 🙏`;
                 showNotification('Lista exportada como imagem!');
             }).catch(error => {
                 console.error('Erro ao exportar imagem:', error);
-                showNotification('Erro ao exportar imagem. Tente novamente.');
+                showNotification('Erro ao exportar imagem. Trente novamente.');
             });
         });
         
